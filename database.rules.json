@@ -1,0 +1,205 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      ".indexOn": [
+        "businessId",
+        "email",
+        "phoneNumber"
+      ],
+      ".read": "(auth != null) || (query.orderBy == 'phoneNumber' && query.equalTo != null)",
+      "$uid": {
+        ".write": "auth != null && (newData.child('uid').val() === $uid || !data.exists())",
+        ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('email').val() === 'ttrbuzi@gmail.com' || (root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('businessId').val() === data.child('businessId').val()))",
+        ".validate": "newData.hasChildren(['uid', 'email', 'displayName', 'role', 'businessId', 'assignedWorkspaceId']) && newData.child('uid').val() === $uid",
+        "pin": {
+          ".validate": "newData.isString() && (newData.val().length === 4 || newData.val().length === 0)"
+        },
+        "workspaces": {
+          "$workspaceId": {
+            ".validate": "root.child('businesses').child(newData.parent().parent().child('businessId').val()).child('profile').child('ownerUid').val() !== $uid || newData.val() === 'admin'"
+          }
+        }
+      }
+    },
+    "businesses": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('email').val() === 'ttrbuzi@gmail.com'",
+      "$businessId": {
+        ".read": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists() || root.child('users').child(auth.uid).child('email').val() === 'ttrbuzi@gmail.com')",
+        ".write": "(!data.exists() && newData.hasChildren(['profile'])) || (auth != null && (root.child('users').child(auth.uid).child('workspaces').child($businessId).exists() || data.child('profile/ownerUid').val() === auth.uid || root.child('users').child(auth.uid).child('email').val() === 'ttrbuzi@gmail.com'))",
+        "profile": {
+          ".validate": "newData.hasChildren(['name', 'type', 'country', 'ownerUid', 'createdAt', 'updatedAt']) || (data.exists() && root.child('users').child(auth.uid).child('email').val() === 'ttrbuzi@gmail.com')"
+        },
+        "activityLog": {
+          ".read": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists())",
+          ".indexOn": [
+            "deviceTimestamp",
+            "serverTimestamp",
+            "workspaceId"
+          ],
+          "$logId": {
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists() || root.child('businesses').child($businessId).child('profile').child('ownerUid').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['workspaceId', 'actorUid', 'action', 'deviceTimestamp', 'serverTimestamp']) && (newData.child('serverTimestamp').val() === now || data.exists())"
+          }
+        },
+        "reservations": {
+          ".read": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists())",
+          ".indexOn": "workspaceId",
+          "$reservationId": {
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists() || root.child('businesses').child($businessId).child('profile').child('ownerUid').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['workspaceId', 'guestName', 'checkInDate', 'checkOutDate', 'totalAmount', 'status', 'id', 'createdBy', 'createdAt', 'updatedAt', 'isDeleted']) && newData.child('id').val() === $reservationId && (!data.exists() ? (newData.child('createdAt').val() <= now + 86400000) : (newData.child('createdAt').val() === data.child('createdAt').val())) && (!newData.child('updatedAt').exists() || newData.child('updatedAt').val() <= now + 86400000)"
+          }
+        },
+        "expenses": {
+          ".read": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists())",
+          ".indexOn": "workspaceId",
+          "$expenseId": {
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists() || root.child('businesses').child($businessId).child('profile').child('ownerUid').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['workspaceId', 'itemName', 'amount', 'category', 'date', 'id', 'createdBy', 'createdAt', 'updatedAt', 'isDeleted']) && newData.child('id').val() === $expenseId && (!data.exists() ? (newData.child('createdAt').val() <= now + 86400000) : (newData.child('createdAt').val() === data.child('createdAt').val())) && (!newData.child('updatedAt').exists() || newData.child('updatedAt').val() <= now + 86400000)"
+          }
+        },
+        "quickIncomes": {
+          ".read": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists())",
+          ".indexOn": "workspaceId",
+          "$incomeId": {
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists() || root.child('businesses').child($businessId).child('profile').child('ownerUid').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['workspaceId', 'description', 'amount', 'date', 'id', 'createdBy', 'createdAt', 'updatedAt', 'isDeleted']) && newData.child('id').val() === $incomeId && (!data.exists() ? (newData.child('createdAt').val() <= now + 86400000) : (newData.child('createdAt').val() === data.child('createdAt').val())) && (!newData.child('updatedAt').exists() || newData.child('updatedAt').val() <= now + 86400000)"
+          }
+        },
+        "clients": {
+          ".read": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists())",
+          ".indexOn": "workspaceId",
+          "$clientId": {
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists() || root.child('businesses').child($businessId).child('profile').child('ownerUid').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['workspaceId', 'name', 'phoneNumber', 'id', 'createdBy', 'createdAt', 'updatedAt', 'isDeleted']) && newData.child('id').val() === $clientId && (!data.exists() ? (newData.child('createdAt').val() <= now + 86400000) : (newData.child('createdAt').val() === data.child('createdAt').val())) && (!newData.child('updatedAt').exists() || newData.child('updatedAt').val() <= now + 86400000)"
+          }
+        },
+        "investments": {
+          ".read": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists())",
+          ".indexOn": "workspaceId",
+          "$investmentId": {
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists() || root.child('businesses').child($businessId).child('profile').child('ownerUid').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['workspaceId', 'name', 'initialAmount', 'expectedReturn', 'timeframeMonths', 'riskLevel', 'status', 'id', 'createdBy', 'createdAt', 'updatedAt', 'isDeleted']) && newData.child('id').val() === $investmentId && (!data.exists() ? (newData.child('createdAt').val() <= now + 86400000) : (newData.child('createdAt').val() === data.child('createdAt').val())) && (!newData.child('updatedAt').exists() || newData.child('updatedAt').val() <= now + 86400000)"
+          }
+        },
+        "stock": {
+          ".read": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists())",
+          ".indexOn": "workspaceId",
+          "$stockId": {
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists() || root.child('businesses').child($businessId).child('profile').child('ownerUid').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['workspaceId', 'name', 'unit', 'currentQuantity', 'id', 'createdBy', 'createdAt', 'updatedAt', 'isDeleted']) && newData.child('id').val() === $stockId && (!data.exists() ? (newData.child('createdAt').val() <= now + 86400000) : (newData.child('createdAt').val() === data.child('createdAt').val())) && (!newData.child('updatedAt').exists() || newData.child('updatedAt').val() <= now + 86400000)"
+          }
+        },
+        "planning": {
+          ".read": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists())",
+          ".indexOn": "workspaceId",
+          "$itemId": {
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists() || root.child('businesses').child($businessId).child('profile').child('ownerUid').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['workspaceId', 'title', 'date', 'type', 'status', 'id', 'createdBy', 'createdAt', 'updatedAt', 'isDeleted']) && newData.child('id').val() === $itemId && (!data.exists() ? (newData.child('createdAt').val() <= now + 86400000) : (newData.child('createdAt').val() === data.child('createdAt').val())) && (!newData.child('updatedAt').exists() || newData.child('updatedAt').val() <= now + 86400000)"
+          }
+        },
+        "profits": {
+          ".read": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists())",
+          ".indexOn": "workspaceId",
+          "$profitId": {
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists() || root.child('businesses').child($businessId).child('profile').child('ownerUid').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['workspaceId', 'amount', 'date', 'id', 'createdBy', 'createdAt', 'sourceType']) && newData.child('id').val() === $profitId"
+          }
+        },
+        "deletionHistory": {
+          ".read": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists())",
+          ".indexOn": "workspaceId",
+          "$historyId": {
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists() || root.child('businesses').child($businessId).child('profile').child('ownerUid').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['workspaceId', 'entityType', 'entityId', 'deletedAt', 'id']) && newData.child('id').val() === $historyId"
+          }
+        },
+        "referrals": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('businessId').val() === $businessId",
+          "$referredId": {
+            ".validate": "newData.hasChildren(['id', 'referredBusinessName', 'status', 'commissionEarned', 'date'])"
+          }
+        },
+        "personalization": {
+          ".read": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists())",
+          ".write": "auth != null && (root.child('users').child(auth.uid).child('businessId').val() === $businessId || root.child('users').child(auth.uid).child('workspaces').child($businessId).exists() || root.child('businesses').child($businessId).child('profile').child('ownerUid').val() === auth.uid)",
+          ".validate": "newData.hasChildren(['serviceTypes']) || newData.hasChildren(['receiptWatermarkEnabled'])"
+        }
+      }
+    },
+    "invitations": {
+      "$tokenId": {
+        ".read": true,
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['businessId', 'businessName', 'workspaceId', 'role', 'createdBy', 'employeePhoneNumber', 'createdAt'])"
+      }
+    },
+    "trialRequests": {
+      ".indexOn": "status",
+      ".read": "auth != null && root.child('users').child(auth.uid).child('email').val() === 'ttrbuzi@gmail.com'",
+      "$requestId": {
+        ".write": "auth != null && ((!data.exists() && newData.child('userId').val() === auth.uid) || (root.child('users').child(auth.uid).child('email').val() === 'ttrbuzi@gmail.com'))",
+        ".validate": "newData.hasChildren(['id', 'userId', 'businessId', 'businessName', 'phoneNumber', 'status', 'createdAt'])"
+      }
+    },
+    "subscriptionRequests": {
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('email').val() === 'ttrbuzi@gmail.com' || (query.orderByChild === 'userId' && query.equalTo === auth.uid))",
+      ".indexOn": [
+        "status",
+        "userId",
+        "createdAt"
+      ],
+      "$requestId": {
+        ".write": "auth != null && (newData.hasChildren(['id', 'userId', 'businessId', 'status', 'createdAt']) || (data.child('status').val() === 'pending' && root.child('users').child(auth.uid).child('email').val() === 'ttrbuzi@gmail.com') || (auth.uid === newData.child('userId').val()))"
+      }
+    },
+    "employeeLogins": {
+      ".read": false,
+      ".write": false
+    },
+    "referralCodeIndex": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "authorizedApps": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('email').val() === 'ttrbuzi@gmail.com'",
+      ".write": "auth != null && root.child('users').child(auth.uid).child('email').val() === 'ttrbuzi@gmail.com'",
+      "$appId": {
+        ".validate": "newData.hasChildren(['id', 'name', 'apiKey', 'allowedRedirectUris', 'creatorUid', 'createdAt'])"
+      }
+    },
+    "app-notifications": {
+      ".read": "auth != null",
+      ".indexOn": [
+        "createdAt"
+      ],
+      "$notificationId": {
+        ".write": "auth != null && root.child('users').child(auth.uid).child('email').val() === 'ttrbuzi@gmail.com'",
+        ".validate": "newData.hasChildren(['id', 'title', 'description', 'createdAt'])"
+      }
+    },
+    "ai-feedback": {
+      ".write": "auth != null && newData.child('actorUid').val() === auth.uid",
+      "$feedbackId": {
+        ".validate": "newData.hasChildren(['id', 'businessId', 'actorUid', 'prompt', 'response', 'feedback', 'timestamp'])"
+      }
+    },
+    "promotions": {
+      ".read": "auth != null",
+      ".indexOn": "createdAt",
+      ".write": "auth != null && root.child('users').child(auth.uid).child('email').val() === 'ttrbuzi@gmail.com'",
+      "$promotionId": {
+        ".validate": "newData.hasChildren(['id', 'imageUrl', 'linkUrl', 'createdAt'])"
+      }
+    },
+    "videos": {
+      ".read": "auth != null",
+      ".indexOn": "createdAt",
+      ".write": "auth != null && root.child('users').child(auth.uid).child('email').val() === 'ttrbuzi@gmail.com'",
+      "$videoId": {
+        ".validate": "newData.hasChildren(['id', 'title', 'description', 'videoUrl', 'createdAt'])"
+      }
+    }
+  }
+}

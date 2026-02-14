@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+      xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+      xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+<url>
+  <loc>https://app.ttrgestion.site/</loc>
+  <lastmod>2024-05-20T12:00:00+00:00</lastmod>
+  <priority>1.00</priority>
+  <image:image>
+    <image:loc>https://app.ttrgestion.site/icon.svg</image:loc>
+    <image:title>Logo TTR Gestion</image:title>
+  </image:image>
+</url>
+<url>
+  <loc>https://app.ttrgestion.site/login</loc>
+  <lastmod>2024-05-20T12:00:00+00:00</lastmod>
+  <priority>0.80</priority>
+  <image:image>
+    <image:loc>https://app.ttrgestion.site/icon.svg</image:loc>
+    <image:title>Connexion TTR Gestion</image:title>
+  </image:image>
+</url>
+<url>
+  <loc>https://app.ttrgestion.site/register</loc>
+  <lastmod>2024-05-20T12:00:00+00:00</lastmod>
+  <priority>0.80</priority>
+  <image:image>
+    <image:loc>https://app.ttrgestion.site/icon.svg</image:loc>
+    <image:title>Inscription TTR Gestion</image:title>
+  </image:image>
+</url>
+<url>
+  <loc>https://app.ttrgestion.site/overview</loc>
+  <lastmod>2024-05-20T12:00:00+00:00</lastmod>
+  <priority>0.70</priority>
+  <image:image>
+    <image:loc>https://app.ttrgestion.site/icon.svg</image:loc>
+    <image:title>Tableau de Bord TTR Gestion</image:title>
+  </image:image>
+</url>
+<url>
+  <loc>https://app.ttrgestion.site/clients</loc>
+  <lastmod>2024-05-20T12:00:00+00:00</lastmod>
+  <priority>0.60</priority>
+  <image:image>
+    <image:loc>https://app.ttrgestion.site/icon.svg</image:loc>
+    <image:title>Gestion des Clients - TTR Gestion</image:title>
+  </image:image>
+</url>
+<url>
+  <loc>https://app.ttrgestion.site/expenses</loc>
+  <lastmod>2024-05-20T12:00:00+00:00</lastmod>
+  <priority>0.60</priority>
+  <image:image>
+    <image:loc>https://app.ttrgestion.site/icon.svg</image:loc>
+    <image:title>Gestion de la Trésorerie - TTR Gestion</image:title>
+  </image:image>
+</url>
+<url>
+  <loc>https://app.ttrgestion.site/stock</loc>
+  <lastmod>2024-05-20T12:00:00+00:00</lastmod>
+  <priority>0.60</priority>
+  <image:image>
+    <image:loc>https://app.ttrgestion.site/icon.svg</image:loc>
+    <image:title>Gestion de Stock - TTR Gestion</image:title>
+  </image:image>
+</url>
+<url>
+  <loc>https://app.ttrgestion.site/reservations</loc>
+  <lastmod>2024-05-20T12:00:00+00:00</lastmod>
+  <priority>0.60</priority>
+  <image:image>
+    <image:loc>https://app.ttrgestion.site/icon.svg</image:loc>
+    <image:title>Gestion des Prestations - TTR Gestion</image:title>
+  </image:image>
+</url>
+</urlset>

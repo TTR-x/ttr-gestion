@@ -1,0 +1,584 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 23% 90%;
+    /* Light Gray #E0E5EC */
+    --foreground: 0 0% 3.9%;
+    --card: 210 23% 96%;
+    /* Slightly lighter than background for cards */
+    --card-foreground: 0 0% 3.9%;
+    --popover: 210 23% 96%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 238 53% 37%;
+    /* Dark Blue #2E3192 */
+    --primary-foreground: 0 0% 98%;
+    --secondary: 210 20% 85%;
+    /* Slightly darker gray for secondary elements */
+    --secondary-foreground: 0 0% 9%;
+    --muted: 210 20% 85%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 204 70% 53%;
+    /* Light Blue #3498DB */
+    --accent-foreground: 0 0% 98%;
+    /* White text on accent */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 210 20% 80%;
+    /* Gray border */
+    --input: 210 20% 98%;
+    /* Lighter input background */
+    --ring: 204 70% 53%;
+    /* Accent color for rings */
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+
+    /* Sidebar colors matching main theme */
+    --sidebar-background: 238 45% 30%;
+    /* Darker shade of primary for sidebar bg */
+    --sidebar-foreground: 0 0% 95%;
+    /* Light text for sidebar */
+    --sidebar-primary: 204 70% 53%;
+    /* Accent for sidebar active/hover */
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 238 53% 45%;
+    /* Lighter primary for sidebar accent */
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 238 53% 25%;
+    /* Darker border for sidebar */
+    --sidebar-ring: 204 70% 53%;
+  }
+
+  .dark {
+    --background: 0 0% 20%;
+    /* Dark Gray #333333 */
+    --foreground: 0 0% 98%;
+    --card: 0 0% 15%;
+    /* Slightly darker than background for cards */
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 15%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 238 53% 47%;
+    /* Slightly lighter Dark Blue for dark mode */
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 25%;
+    /* Slightly lighter gray for secondary elements */
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 25%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 204 70% 63%;
+    /* Slightly lighter Light Blue for dark mode */
+    --accent-foreground: 0 0% 9%;
+    /* Dark text on accent */
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 28%;
+    /* Gray border for dark mode */
+    --input: 0 0% 10%;
+    /* Darker input background */
+    --ring: 204 70% 63%;
+    /* Accent color for rings in dark mode */
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+
+    /* Sidebar colors for dark mode */
+    --sidebar-background: 0 0% 12%;
+    /* Very dark gray for sidebar bg */
+    --sidebar-foreground: 0 0% 90%;
+    /* Light text for sidebar */
+    --sidebar-primary: 204 70% 63%;
+    /* Accent for sidebar active/hover */
+    --sidebar-primary-foreground: 0 0% 9%;
+    --sidebar-accent: 0 0% 18%;
+    /* Darker accent for sidebar */
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 10%;
+    /* Darker border for sidebar */
+    --sidebar-ring: 204 70% 63%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  /* Empêcher les débordements horizontaux */
+  html,
+  body {
+    @apply overflow-x-hidden;
+    max-width: 100vw;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Empêcher les éléments de déborder */
+  * {
+    box-sizing: border-box;
+  }
+
+  /* Responsive images et media */
+  img,
+  video,
+  iframe {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+@layer utilities {
+  .text-shadow-sm {
+    text-shadow: 1px 1px 2px var(--tw-shadow-color);
+  }
+
+  /* Conteneur responsive sans débordement */
+  .container-safe {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Scroll horizontal sécurisé pour les tableaux */
+  .table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Empêcher le zoom sur les inputs (iOS) */
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* Sensation native sur mobile - Cartes sans bordures */
+  @media (max-width: 768px) {
+
+    /* FORCER LA SIDEBAR À DISPARAÎTRE COMPLÈTEMENT */
+    aside[data-variant="sidebar"],
+    .group\/sidebar-wrapper aside {
+      display: none !important;
+      width: 0 !important;
+      min-width: 0 !important;
+      flex: 0 !important;
+    }
+
+    /* FORCER LE CONTENU À PRENDRE TOUTE LA PLACE */
+    .group\/sidebar-wrapper,
+    [data-variant="inset"] {
+      padding-left: 0 !important;
+      margin-left: 0 !important;
+      width: 100% !important;
+      max-width: 100vw !important;
+    }
+
+    main {
+      width: 100% !important;
+      max-width: 100vw !important;
+      margin: 0 !important;
+      padding-left: 1rem !important;
+      padding-right: 1rem !important;
+    }
+
+    .mobile-native-card {
+      border: none !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      margin-left: -1rem !important;
+      margin-right: -1rem !important;
+      padding-left: 1rem !important;
+      padding-right: 1rem !important;
+    }
+
+    /* Supprimer les bordures des cartes par défaut sur mobile */
+    [class*="card"],
+    [class*="Card"] {
+      border: none !important;
+      box-shadow: none !important;
+    }
+
+    /* Garder un léger séparateur entre les sections */
+    [class*="card"]+[class*="card"],
+    [class*="Card"]+[class*="Card"] {
+      border-top: 1px solid hsl(var(--border)) !important;
+      padding-top: 1rem !important;
+      margin-top: 1rem !important;
+    }
+
+    /* Inputs et formulaires pleine largeur sur mobile */
+    input:not([type="checkbox"]):not([type="radio"]),
+    textarea,
+    select {
+      width: 100% !important;
+    }
+
+    /* Dialogs et modals plein écran sur mobile */
+    [role="dialog"],
+    [class*="dialog"],
+    [class*="Dialog"] {
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      border-radius: 0 !important;
+      margin: 0 !important;
+    }
+
+    /* Conteneurs principaux sans padding sur mobile */
+    main {
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
+
+    /* Espacements réduits sur mobile */
+    .space-y-8>*+* {
+      margin-top: 1rem !important;
+    }
+
+    .space-y-6>*+* {
+      margin-top: 0.75rem !important;
+    }
+  }
+}
+
+
+/* ========================================
+   TRANSITIONS NATIVES - PHASE 1
+   ======================================== */
+
+/* 1. Navigation Slide (iOS/Android style) */
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutToLeft {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateX(-30%);
+    opacity: 0;
+  }
+}
+
+.page-transition-enter {
+  animation: slideInFromRight 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-transition-exit {
+  animation: slideOutToLeft 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 2. Modal Slide Up (iOS style) */
+@keyframes slideUpFromBottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDownToBottom {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+/* Appliquer aux dialogs/modals */
+[data-state="open"][role="dialog"],
+[data-state="open"][class*="dialog"],
+[data-state="open"][class*="Dialog"] {
+  animation: slideUpFromBottom 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-state="closed"][role="dialog"],
+[data-state="closed"][class*="dialog"],
+[data-state="closed"][class*="Dialog"] {
+  animation: slideDownToBottom 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Backdrop fade */
+[data-state="open"][class*="overlay"],
+[data-state="open"][class*="Overlay"] {
+  animation: fadeIn 200ms ease-out;
+}
+
+[data-state="closed"][class*="overlay"],
+[data-state="closed"][class*="Overlay"] {
+  animation: fadeOut 200ms ease-out;
+}
+
+/* 3. Button Ripple & Press Effect */
+button:not(.no-animation),
+[role="button"]:not(.no-animation) {
+  position: relative;
+  overflow: hidden;
+  transition: transform 100ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:active:not(.no-animation),
+[role="button"]:active:not(.no-animation) {
+  transform: scale(0.95);
+}
+
+/* 4. List Stagger Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stagger-item {
+  animation: fadeInUp 400ms cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+.stagger-item:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.stagger-item:nth-child(2) {
+  animation-delay: 50ms;
+}
+
+.stagger-item:nth-child(3) {
+  animation-delay: 100ms;
+}
+
+.stagger-item:nth-child(4) {
+  animation-delay: 150ms;
+}
+
+.stagger-item:nth-child(5) {
+  animation-delay: 200ms;
+}
+
+.stagger-item:nth-child(6) {
+  animation-delay: 250ms;
+}
+
+.stagger-item:nth-child(7) {
+  animation-delay: 300ms;
+}
+
+.stagger-item:nth-child(8) {
+  animation-delay: 350ms;
+}
+
+.stagger-item:nth-child(9) {
+  animation-delay: 400ms;
+}
+
+.stagger-item:nth-child(10) {
+  animation-delay: 450ms;
+}
+
+.stagger-item:nth-child(n+11) {
+  animation-delay: 500ms;
+}
+
+/* 5. Skeleton Shimmer Loading */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted-foreground) / 0.1) 50%,
+      hsl(var(--muted)) 100%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Shake Animation */
+@keyframes shake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-4px);
+  }
+
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+/* Smooth transitions globales */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Désactiver les transitions pendant le resize */
+.resize-animation-stopper * {
+  transition: none !important;
+}
+
+/* Styles for Embla Carousel Fade Effect */
+.embla-fade .embla__container {
+  @apply flex;
+}
+
+.embla-fade .embla__slide {
+  @apply opacity-0 transition-opacity duration-500 ease-in-out;
+  flex: 0 0 100%;
+}
+
+.embla-fade .is-selected {
+  @apply opacity-100;
+}
+
+
+@media print {
+
+  /* Hide non-printable elements */
+  .no-print,
+  .no-print * {
+    display: none !important;
+  }
+
+  /* Ensure white background for print */
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+
+  /* Receipt container takes full width and prevents page breaks */
+  #receipt-print-area {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+    page-break-before: avoid !important;
+  }
+
+  /* Ensure receipt content doesn't break */
+  #receipt-print-area>* {
+    page-break-inside: avoid !important;
+  }
+
+  /* Hide navigation and UI elements */
+  header,
+  aside,
+  nav,
+  main,
+  .floating-calculator-card,
+  button,
+  footer:not(.print-only) {
+    display: none !important;
+  }
+
+  /* Page configuration */
+  @page {
+    size: A4;
+    margin: 5mm;
+  }
+
+  /* Prevent page breaks in important sections */
+  table,
+  .receipt-section {
+    page-break-inside: avoid;
+  }
+
+  /* Ensure images print correctly */
+  img {
+    max-width: 100%;
+    page-break-inside: avoid;
+  }
+
+  /* Remove shadows and borders for print */
+  .print-container,
+  #receipt-print-area * {
+    box-shadow: none !important;
+  }
+}

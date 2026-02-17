@@ -274,10 +274,6 @@ export default function DashboardLayout({
     }
   }, []);
 
-  const animationClass = useMemo(() => {
-    const isMainPage = mainRoutes.includes(pathname);
-    return isMainPage ? 'animate-fade-in' : 'animate-flow-in';
-  }, [pathname]);
 
   const createWhatsAppLink = () => {
     const phoneNumber = "+22899974389";
@@ -533,7 +529,7 @@ export default function DashboardLayout({
               </Alert>
             )}
             <main className={cn("flex-1 p-4 md:p-6 lg:p-8 pb-24 md:pb-6 flex flex-col items-center", isAssistantPage && "p-0 md:p-0 lg:p-0 pb-24 md:pb-0")}>
-              <div className={cn("flex-1 flex flex-col w-full max-w-[1600px]", animationClass)}>
+              <div className="flex-1 flex flex-col w-full max-w-[1600px]">
                 <PremiumFeatureGuard pathname={pathname}>
                   {children}
                 </PremiumFeatureGuard>

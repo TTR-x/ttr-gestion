@@ -84,9 +84,10 @@ export async function POST(request: NextRequest) {
             console.error('[Promo API] CLOUDFLARE_PROXY_URL is not configured');
             return NextResponse.json(
                 {
-                    success: false, error: 'Configuration serveur incomplète. Contactez l'administrateur.' },
-        { status: 500 }
-      );
+                    success: false, error: "Configuration serveur incomplète. Contactez l'administrateur."
+                },
+                { status: 500 }
+            );
         }
 
         console.log('[Promo API] Verifying promo code:', { promoCode, businessId, status, ip });

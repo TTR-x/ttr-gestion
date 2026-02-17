@@ -48,35 +48,21 @@ const OnlineStatusIndicator: React.FC = () => {
 };
 
 const SyncStatusIndicator: React.FC = () => {
-    // This could be tied to a global loading state in a real app
-    const [isSyncing, setIsSyncing] = useState(false);
-
-    // Simulate sync activity
-    useEffect(() => {
-        let interval: NodeJS.Timeout;
-        if (Math.random() > 0.7) { // Randomly decide to "sync"
-            interval = setInterval(() => {
-                setIsSyncing(true);
-                setTimeout(() => setIsSyncing(false), 2000);
-            }, 30000); // every 30s
-        }
-        return () => clearInterval(interval);
-    }, []);
-
+    const { isSyncing } = useAuth();
 
     return (
         <Tooltip>
             <TooltipTrigger asChild>
                 <div className="flex items-center gap-2">
                     {isSyncing ? (
-                        <CloudCog className="h-5 w-5 text-yellow-500 animate-pulse" />
+                        <CloudCog className="h-5 w-5 text-yellow-500 animate-pulse scale-110 transition-transform duration-500" />
                     ) : (
-                        <Cloud className="h-5 w-5 text-green-500" />
+                        <Cloud className="h-5 w-5 text-green-500 transition-transform duration-500" />
                     )}
                 </div>
             </TooltipTrigger>
             <TooltipContent>
-                <p>{isSyncing ? "Sauvegarde en cours..." : "Toutes les données sont sauvegardées"}</p>
+                <p>{isSyncing ? "Synchronisation en cours..." : "Toutes vos données sont à jour"}</p>
             </TooltipContent>
         </Tooltip>
     );

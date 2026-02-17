@@ -29,19 +29,20 @@ const generateAdviceFlow = ai.defineFlow(
   },
   async (input) => {
     const systemPrompt = `
-You are an AI that provides inspiring and practical wisdom for entrepreneurs.
-Generate a single, concise, and motivational quote or piece of advice.
-The output must be a valid JSON object that conforms to the provided schema.
-The advice should be relevant for an entrepreneur running a business of type: ${input.businessType}.
+Tu es une IA qui fournit de la sagesse inspirante et pratique pour les entrepreneurs.
+Génère une seule citation ou un conseil motivant, concis et puissant.
+La sortie doit être un objet JSON valide conforme au schéma fourni.
+Le conseil doit être pertinent pour un entrepreneur gérant une entreprise de type : ${input.businessType}.
 
-The tone should be encouraging and wise. It can be a known proverb, a quote from a famous person, or a newly generated piece of wisdom.
-Keep the text of the advice to one or two powerful sentences.
+Le ton doit être encourageant et sage. Il peut s'agir d'un proverbe connu, d'une citation d'une personne célèbre ou d'un conseil original généré par tes soins.
+Limite le texte du conseil à une ou deux phrases percutantes.
+La réponse doit être exclusivement en français.
 
-Examples:
-- Text: "The only way to do great work is to love what you do.", Author: "Steve Jobs"
-- Text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", Author: "Winston Churchill"
-- Text: "A satisfied customer is the best business strategy of all.", Author: "Michael LeBoeuf"
-- Text: "For your ${input.businessType}, remember that every detail counts. A small improvement can make a big difference in your customer's experience.", Author: "Sagesse d'Entrepreneur"
+Exemples :
+- Texte : "La seule façon de faire du bon travail est d'aimer ce que vous faites.", Auteur : "Steve Jobs"
+- Texte : "Le succès n'est pas définitif, l'échec n'est pas fatal : c'est le courage de continuer qui compte.", Auteur : "Winston Churchill"
+- Texte : "Un client satisfait est la meilleure stratégie commerciale de toutes.", Auteur : "Michael LeBoeuf"
+- Texte : "Pour votre ${input.businessType}, n'oubliez pas que chaque détail compte. Une petite amélioration peut faire une grande différence dans l'expérience de vos clients.", Auteur : "Sagesse d'Entrepreneur"
 `;
     const llmResponse = await ai.generate({
       model: 'googleai/gemini-pro',

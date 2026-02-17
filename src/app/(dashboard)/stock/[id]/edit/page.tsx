@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -9,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ArrowLeft, Wand2, Upload } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/providers/auth-provider";
 import { syncService } from "@/lib/sync-service";
@@ -314,7 +316,7 @@ export default function EditStockItemPage() {
                                 />
 
                                 {isForSale && (
-                                    <div className="p-4 border rounded-md animate-in fade-in space-y-4">
+                                    <div className="p-4 border rounded-md animate-in fade-in space-y-4 overflow-hidden transition-all duration-300">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <FormField control={form.control} name="purchasePrice" render={({ field }) => (
                                                 <FormItem>

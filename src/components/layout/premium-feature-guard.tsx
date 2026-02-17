@@ -68,7 +68,7 @@ export function PremiumFeatureGuard({ children, pathname }: PremiumFeatureGuardP
     const isBlocked = feature && isFreePlan && !isSuperAdmin && !isTrialing;
 
     const testsUsed = businessProfile?.premiumTestsUsed || 0;
-    const testsRemaining = Math.max(0, 10 - testsUsed);
+    const testsRemaining = Math.max(0, 35 - testsUsed);
     const hasTestsLeft = testsRemaining > 0;
 
     const handleStartTrial = async () => {
@@ -139,7 +139,7 @@ export function PremiumFeatureGuard({ children, pathname }: PremiumFeatureGuardP
                             {testsRemaining} essais gratuits restants
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Chaque déblocage consomme 1 essai sur vos 10 offerts.
+                            Chaque déblocage consomme 1 essai sur vos 35 offerts.
                         </p>
                     </div>
                 </CardContent>

@@ -271,7 +271,7 @@ export function WalletButton() {
                                     <DialogTitle>Recharger mon compte</DialogTitle>
                                 </div>
                                 <DialogDescription>
-                                    Achetez des Monoyi pour profiter des services premium.
+                                    Échangez vos FCFA en Monoyi pour profiter des services premium.
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="py-8 text-center space-y-4">
@@ -283,7 +283,7 @@ export function WalletButton() {
                                 </p>
                                 <Button variant="outline" asChild className="w-full">
                                     <Link href={createWhatsAppLink()} target='_blank'>
-                                        Contacter le support pour recharger
+                                        Contacter le support pour échanger
                                     </Link>
                                 </Button>
                             </div>
@@ -296,7 +296,7 @@ export function WalletButton() {
 
     function createWhatsAppLink() {
         const phoneNumber = "+22899974389";
-        const message = `Bonjour, je souhaite acheter des Monoyi pour mon entreprise "${businessProfile?.name}".`;
+        const message = `Bonjour, je souhaite échanger mes FCFA en Monoyi pour mon entreprise "${businessProfile?.name}".`;
         return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     }
 }

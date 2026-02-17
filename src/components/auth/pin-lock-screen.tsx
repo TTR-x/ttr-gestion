@@ -9,18 +9,27 @@ import { useAuth } from '@/providers/auth-provider';
 import { Loader2, ShieldCheck, LogOut, Delete } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+
 export function PinLockScreen() {
-    const { currentUser, verifyPin, logout } = useAuth();
+    const { currentUser, verifyPin, logout, resetPinWithPassword } = useAuth();
     const [pin, setPin] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
 
+    // Reset PIN states
+    const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+    const [resetPassword, setResetPassword] = useState('');
+    const [resetError, setResetError] = useState('');
+    const [isResetting, setIsResetting] = useState(false);
+
     const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value.replace(/[^0-9]/g, '');
         if (value.length <= 4) {
             setPin(value);
-            if(error) setError('');
+            if (error) setError('');
             if (value.length === 4) {
                 handleSubmit(value);
             }
@@ -34,7 +43,7 @@ export function PinLockScreen() {
         }
         setIsLoading(true);
         setError('');
-        
+
         setTimeout(async () => {
             const success = await verifyPin(finalPin);
             if (!success) {
@@ -46,7 +55,7 @@ export function PinLockScreen() {
                 });
             }
             setIsLoading(false);
-        }, 300);
+        }, 100);
     };
 
     const handleKeypadClick = (num: number | string) => {
@@ -54,7 +63,7 @@ export function PinLockScreen() {
         if (pin.length < 4) {
             const newPin = pin + num;
             setPin(newPin);
-            if(error) setError('');
+            if (error) setError('');
             if (newPin.length === 4) {
                 handleSubmit(newPin);
             }
@@ -64,14 +73,32 @@ export function PinLockScreen() {
     const handleDelete = () => {
         if (isLoading) return;
         setPin(pin.slice(0, -1));
-        if(error) setError('');
+        if (error) setError('');
     };
+
+    const handleResetPin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!resetPassword) return;
+
+        setIsResetting(true);
+        setResetError('');
+
+        try {
+            await resetPinWithPassword(resetPassword);
+            toast({ title: "Accès rétabli", description: "Le code PIN a été supprimé." });
+            setIsResetDialogOpen(false);
+        } catch (error: any) {
+            setResetError(error.message || "Erreur lors de la réinitialisation.");
+        } finally {
+            setIsResetting(false);
+        }
+    }
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/95 backdrop-blur-sm p-4">
             <Card className="w-full max-w-sm text-center shadow-2xl animate-in fade-in-50 zoom-in-95">
                 <CardHeader>
-                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
                         <ShieldCheck className="h-10 w-10 text-primary" />
                     </div>
                     <CardTitle>Bonjour, {currentUser?.displayName} !</CardTitle>
@@ -93,10 +120,10 @@ export function PinLockScreen() {
                             className="absolute opacity-0 pointer-events-none"
                             autoFocus
                         />
-                         {error && <p className="text-sm font-medium text-destructive mt-2 min-h-[20px]">{error}</p>}
-                         {!error && <div className="min-h-[20px] mt-2"></div>}
+                        {error && <p className="text-sm font-medium text-destructive mt-2 min-h-[20px]">{error}</p>}
+                        {!error && <div className="min-h-[20px] mt-2"></div>}
 
-                         <div className="grid grid-cols-3 gap-2 mt-4">
+                        <div className="grid grid-cols-3 gap-2 mt-4">
                             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
                                 <Button key={num} type="button" variant="outline" className="h-16 text-2xl font-light" onClick={() => handleKeypadClick(num)} disabled={isLoading}>
                                     {num}
@@ -107,12 +134,47 @@ export function PinLockScreen() {
                             <Button type="button" variant="ghost" className="h-16" onClick={handleDelete} disabled={isLoading}>
                                 <Delete className="h-6 w-6" />
                             </Button>
-                         </div>
+                        </div>
                     </form>
                 </CardContent>
-                <CardFooter>
-                    <Button variant="link" size="sm" className="w-full text-muted-foreground h-auto" onClick={logout}>
-                       <LogOut className="mr-2 h-4 w-4" /> Ce n'est pas vous ? Déconnexion
+                <CardFooter className="flex flex-col gap-2">
+                    <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="link" size="sm" className="w-full text-primary h-auto">
+                                Code PIN oublié ?
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Réinitialiser le Code PIN</DialogTitle>
+                                <DialogDescription>
+                                    Pour votre sécurité, veuillez entrer le mot de passe de votre compte pour supprimer le verrouillage PIN.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <form onSubmit={handleResetPin} className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="password">Mot de passe du compte</Label>
+                                    <Input
+                                        id="password"
+                                        type="password"
+                                        value={resetPassword}
+                                        onChange={(e) => setResetPassword(e.target.value)}
+                                        placeholder="Votre mot de passe..."
+                                    />
+                                    {resetError && <p className="text-destructive text-sm">{resetError}</p>}
+                                </div>
+                                <DialogFooter>
+                                    <Button type="submit" disabled={isResetting}>
+                                        {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Déverrouiller
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+
+                    <Button variant="ghost" size="sm" className="w-full text-muted-foreground h-auto text-xs" onClick={logout}>
+                        <LogOut className="mr-2 h-3 w-3" /> Ce n'est pas vous ? Déconnexion
                     </Button>
                 </CardFooter>
             </Card>

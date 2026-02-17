@@ -68,6 +68,31 @@ export function FloatingCalculator() {
     if (!isOpen) setMode('menu');
   }, [isOpen]);
 
+  // Ensure calculator stays within viewport when opened
+  useEffect(() => {
+    if (isOpen && cardRef.current && !position) {
+      // Small delay to let the card render first
+      const timer = setTimeout(() => {
+        const card = cardRef.current;
+        if (!card) return;
+
+        const rect = card.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        // Only adjust if calculator is partially or fully off-screen
+        if (rect.right > viewportWidth || rect.left < 0 || rect.bottom > viewportHeight || rect.top < 0) {
+          const safeX = Math.max(0, Math.min(rect.left, viewportWidth - rect.width));
+          const safeY = Math.max(0, Math.min(rect.top, viewportHeight - rect.height));
+          setPosition({ x: safeX, y: safeY });
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, position]);
+
+
   // L'effet de reset automatique de position a été supprimé pour permettre le déplacement libre sur PC.
 
 
@@ -182,58 +207,75 @@ export function FloatingCalculator() {
 
   // Handle Dragging
   const hasMoved = React.useRef(false);
-  const [isOverDragTrash, setIsOverDragTrash] = useState(false); // UI State
-  const isOverTrashRef = React.useRef(false); // Logic Ref to avoid re-binding
+  const [isOverDragTrash, setIsOverDragTrash] = useState(false);
+  const isOverTrashRef = React.useRef(false);
+  // supprimé les déclarations dupliquées de dragOffset et lastPositionRef ici car elles sont en haut du composant
 
   useEffect(() => {
     if (!isDragging) return;
 
-    // Prevent background scrolling
+    // Bloquer le scroll du body pendant le drag pour éviter que l'écran ne bouge
     document.body.style.overflow = 'hidden';
 
     const handleMove = (e: MouseEvent | TouchEvent) => {
-      e.preventDefault(); // Prevent scrolling on mobile while dragging
-      hasMoved.current = true; // Mark as moved
+      e.preventDefault();
+      hasMoved.current = true;
 
       const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
       const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
 
-      const newX = clientX - dragOffset.current.x;
-      const newY = clientY - dragOffset.current.y;
+      let newX = clientX - dragOffset.current.x;
+      let newY = clientY - dragOffset.current.y;
 
-      // Update DOM directly for performance
+      // Utilisation du VisualViewport pour mobile (Zone Invisible de contrainte)
+      const screenWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+      const screenHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      const offsetLeft = window.visualViewport ? window.visualViewport.offsetLeft : 0;
+      const offsetTop = window.visualViewport ? window.visualViewport.offsetTop : 0;
+
+      const cardRect = cardRef.current?.getBoundingClientRect();
+      const cardWidth = cardRect?.width || 0;
+      const cardHeight = cardRect?.height || 0;
+
+      // Clamping strict tenant compte du zoom/viewport mobile
+      // On s'assure que newX est entre offsetLeft et (offsetLeft + screenWidth - cardWidth)
+      const minX = offsetLeft;
+      const maxX = offsetLeft + screenWidth - cardWidth;
+      const minY = offsetTop;
+      const maxY = offsetTop + screenHeight - cardHeight;
+
+      newX = Math.max(minX, Math.min(newX, maxX));
+      newY = Math.max(minY, Math.min(newY, maxY));
+
       if (cardRef.current) {
         cardRef.current.style.left = `${newX}px`;
         cardRef.current.style.top = `${newY}px`;
       }
 
-      // Detection de la zone de suppression
+      // Trash detection logic...
       const trashThreshold = 100;
-      const trashX = window.innerWidth / 2;
-      const trashY = 80;
+      const trashX = offsetLeft + screenWidth / 2; // Centré par rapport au viewport visible
+      const trashY = offsetTop + 80;
 
-      const cardRect = cardRef.current?.getBoundingClientRect();
-      if (cardRect) {
-        const cardCenterX = cardRect.left + cardRect.width / 2;
-        const cardCenterY = cardRect.top + cardRect.height / 2;
-
+      if (cardWidth > 0) {
+        const cardCenterX = newX + cardWidth / 2;
+        const cardCenterY = newY + cardHeight / 2;
         const dist = Math.sqrt(Math.pow(cardCenterX - trashX, 2) + Math.pow(cardCenterY - trashY, 2));
-
         const isOver = dist < trashThreshold;
 
         if (isOver !== isOverTrashRef.current) {
           isOverTrashRef.current = isOver;
-          setIsOverDragTrash(isOver); // Trigger re-render only on change
+          setIsOverDragTrash(isOver);
           if (cardRef.current) cardRef.current.style.opacity = isOver ? '0.5' : '1';
         }
       }
 
-      // Store for sync on mouse up
       lastPositionRef.current = { x: newX, y: newY };
     };
 
     const handleUp = () => {
       setIsDragging(false);
+      document.body.style.overflow = ''; // Restaurer le scroll
 
       if (isOverTrashRef.current) {
         setIsOpen(false);
@@ -241,10 +283,25 @@ export function FloatingCalculator() {
         isOverTrashRef.current = false;
         setPosition(null);
         setMode('menu');
-      } else {
-        if (lastPositionRef.current) {
-          setPosition(lastPositionRef.current);
+      } else if (lastPositionRef.current) {
+        const screenWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+        const offsetLeft = window.visualViewport ? window.visualViewport.offsetLeft : 0;
+        const cardRect = cardRef.current?.getBoundingClientRect();
+        const cardWidth = cardRect?.width || 0;
+
+        let finalX = lastPositionRef.current.x;
+        let finalY = lastPositionRef.current.y;
+
+        // Snap logic adjusted for visual viewport
+        const centerX = offsetLeft + screenWidth / 2;
+
+        if (finalX + cardWidth / 2 < centerX) {
+          finalX = offsetLeft; // Snap left (taking viewport offset into account)
+        } else {
+          finalX = offsetLeft + screenWidth - cardWidth; // Snap right
         }
+
+        setPosition({ x: finalX, y: finalY });
       }
       if (cardRef.current) cardRef.current.style.opacity = '1';
     };
@@ -256,14 +313,12 @@ export function FloatingCalculator() {
 
     return () => {
       document.body.style.overflow = '';
-      if (cardRef.current) cardRef.current.style.opacity = '1';
-
       window.removeEventListener('mousemove', handleMove);
       window.removeEventListener('mouseup', handleUp);
       window.removeEventListener('touchmove', handleMove);
       window.removeEventListener('touchend', handleUp);
     };
-  }, [isDragging]); // Dependency is solely isDragging involved in setup/teardown
+  }, [isDragging]);
 
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
     hasMoved.current = false;
@@ -287,11 +342,8 @@ export function FloatingCalculator() {
       setPosition({ x: startX, y: startY });
     }
     lastPositionRef.current = { x: startX, y: startY };
-
     setIsDragging(true);
   };
-
-  // ... (Calcul logic) ...
 
   const safeCalculate = (expression: string) => {
     try {
@@ -368,7 +420,6 @@ export function FloatingCalculator() {
     }
   };
 
-  // Helper to prepare data for receipt
   const getReceiptData = () => {
     if (!pendingReceipts) return null;
     const totalAmount = pendingReceipts.reduce((sum, item) => item.type !== 'expense' ? sum + item.amount : sum, 0);
@@ -390,14 +441,10 @@ export function FloatingCalculator() {
     };
   };
 
-  // Dynamic style for PC positioning (attached to sidebar with offset)
-  const sidebarOffset = state === 'expanded' ? '16.25rem' : '3.8rem';
-
   if (!mounted) return null;
 
   return createPortal(
     <>
-      {/* Zone de Suppression (X) - Apparaît seulement au drag */}
       <div
         className={cn(
           "fixed top-12 left-1/2 -translate-x-1/2 z-[10000] transition-all duration-300 pointer-events-none flex flex-col items-center justify-center gap-2",
@@ -421,26 +468,19 @@ export function FloatingCalculator() {
         </span>
       </div>
 
-      {/* Samsung Edge-style Handle with Swipe Detection */}
-
       {!isOpen && (
         <div
           className={cn(
             "fixed top-1/2 -translate-y-1/2 z-[40] group flex items-center w-8 h-40 touch-none py-4 transition-all duration-300 select-none",
             "right-0 justify-end pl-4 cursor-grab active:cursor-grabbing"
           )}
-          // Gestion Universelle (Clic PC + Swipe Mobile/PC)
           onMouseDown={(e) => {
             const startX = e.clientX;
             const handleMouseUp = (e: MouseEvent) => {
               const diff = startX - e.clientX;
-
-              // On autorise désormais le clic sur mobile aussi (diff < 5)
-              // car le swipe peut entrer en conflit avec le geste "retour" du système
               if (Math.abs(diff) < 5 || diff > 30) {
                 setIsOpen(true);
               }
-
               window.removeEventListener('mouseup', handleMouseUp);
             };
             window.addEventListener('mouseup', handleMouseUp, { once: true });
@@ -455,10 +495,6 @@ export function FloatingCalculator() {
             const startX = parseFloat(e.currentTarget.dataset.startX || '0');
             const endX = e.changedTouches[0].clientX;
             const diff = startX - endX;
-
-            // Logique de swipe enrichie
-            // Swipe vers la gauche (>30) OU Tap (<5)
-            // Activation du tap sur mobile pour éviter les conflits de gestes système
             if (diff > 30 || Math.abs(diff) < 5) {
               setIsOpen(true);
             }
@@ -466,13 +502,10 @@ export function FloatingCalculator() {
             e.currentTarget.dataset.startX = '';
           }}
         >
-          {/* Handle Line */}
           <div className={cn(
             "h-24 w-1.5 bg-blue-500/80 hover:bg-blue-600 shadow-[0_0_15px_rgba(59,130,246,0.8)] transition-all duration-300 transform group-hover:w-2",
             "rounded-l-full translate-x-0.5 group-hover:translate-x-0"
           )} />
-
-          {/* Indication visuelle : "Tirer" sur Mobile, "Ouvrir" sur PC au survol */}
           <div className={cn(
             "absolute top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[10px] font-bold text-blue-600 bg-white/90 px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap",
             "right-full mr-1"
@@ -486,11 +519,10 @@ export function FloatingCalculator() {
         <Card
           ref={cardRef}
           className={cn(
-            'fixed z-[40] shadow-2xl animate-in fade-in duration-300 floating-calculator-card transition-[width,height] ease-in-out',
+            'fixed z-[40] shadow-2xl floating-calculator-card transition-[width,height] ease-in-out',
             mode === 'menu' ? 'rounded-3xl' : 'rounded-xl',
-            // Conditional positioning classes based on Mobile/Desktop
             !position && (
-              mode === 'menu' ? 'top-1/2 right-0 -translate-y-1/2 rounded-r-none rounded-l-3xl border-r-0 slide-in-from-right' : 'top-1/2 right-4 -translate-y-1/2 slide-in-from-right'
+              mode === 'menu' ? 'top-1/2 -translate-y-1/2 rounded-r-none rounded-l-3xl border-r-0' : 'top-1/2 -translate-y-1/2'
             )
           )}
           style={{
@@ -498,10 +530,21 @@ export function FloatingCalculator() {
               top: position.y,
               left: position.x,
               margin: 0,
-            } : {}),
-            width: mode === 'menu' ? '4rem' : (isMobile ? 'calc(100vw - 2rem)' : '20rem'),
-            transform: !position ? undefined : 'none',
-            transition: isDragging ? 'none' : 'width 0.3s ease-in-out, height 0.3s ease-in-out, left 0.3s ease-linear'
+            } : {
+              // Position initiale sûre à droite avec marge - garantie dans le viewport
+              top: '50%',
+              right: mode === 'menu' ? '0' : 'max(1rem, env(safe-area-inset-right, 1rem))',
+              left: 'auto',
+            }),
+            width: mode === 'menu' ? '4rem' : (isMobile ? 'calc(100vw - 2rem)' : 'min(20rem, calc(100vw - 2rem))'),
+            maxWidth: 'calc(100vw - 1rem)',
+            transform: !position ? 'translateY(-50%)' : 'none',
+            animation: !position && !isDragging ? 'slideInFromRightSmooth 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none',
+            transition: isDragging
+              ? 'none' // Réponse instantanée 1:1 sans délai (comme YouTube)
+              : 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)', // Effet rebond élastique au relâchement
+            // Optimisation GPU
+            willChange: isDragging ? 'left, top' : 'auto',
           }}
         >
           <CardHeader
@@ -552,8 +595,8 @@ export function FloatingCalculator() {
                         <strong>Glissez la poignée</strong> pour ouvrir ce menu n'importe où.
                       </p>
                       <ul className="text-xs list-disc pl-4 space-y-1 opacity-90">
-                        <li>Maintenez l'en-tête pour déplacer</li>
-                        <li>Accès rapide à la caisse & stock</li>
+                        <li>Déplacez ce menu où vous voulez</li>
+                        <li>Ventes, Stock & Publicité</li>
                       </ul>
                     </div>
                     <Button size="sm" variant="secondary" className="h-7 text-xs w-full mt-3 hover:bg-secondary/90 font-semibold" onClick={dismissTutorial}>C'est noté !</Button>
@@ -564,7 +607,6 @@ export function FloatingCalculator() {
                   size="icon"
                   className="h-6 w-6 pointer-events-auto group relative"
                   onClick={() => {
-                    // Fermeture au clic sur le header si pas de mouvement (comme avant)
                     dismissTutorial();
                     if (!hasMoved.current) setIsOpen(false);
                   }}
@@ -675,7 +717,6 @@ export function FloatingCalculator() {
         </Card>
       )}
 
-      {/* Receipt Modal */}
       {businessProfile && (
         <ReceiptDialog
           isOpen={isReceiptOpen}

@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Mail, Phone, Building, Info, Edit, Save, Loader2, Globe, Gamepad2, Briefcase as WorkspaceIcon, Lock, Shield, ListChecks, ArrowRight, Palette, CircleDollarSign, ShieldCheck, BookOpen, Lightbulb, AlertTriangle, Trash2, Images, Upload, User as UserIcon, HelpCircle, MailCheck, MessageSquare, CheckCircle, Crown } from "lucide-react";
+import { Mail, Phone, Building, Info, Edit, Save, Loader2, Globe, Gamepad2, Briefcase as WorkspaceIcon, Lock, Shield, ListChecks, ArrowRight, Palette, CircleDollarSign, ShieldCheck, BookOpen, Lightbulb, AlertTriangle, Trash2, Images, Upload, User as UserIcon, HelpCircle, MailCheck, MessageSquare, CheckCircle, Crown, Clock } from "lucide-react";
 import packageInfo from '../../../../package.json';
 import { useAuth } from '@/providers/auth-provider';
 import type { BusinessProfile } from '@/lib/types';
@@ -36,6 +36,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ResolvedImage } from '@/components/ui/resolved-image';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { Textarea } from '@/components/ui/textarea';
+import { hashPin } from '@/lib/crypto';
 
 const version = packageInfo.version;
 
@@ -464,8 +465,8 @@ function BusinessProfileCard() {
                 <AlertDialogTrigger asChild>
                   <Button
                     size="icon"
-                    variant="destructive"
-                    className="absolute -bottom-2 -right-2 h-7 w-7 rounded-full"
+                    variant="outline"
+                    className="absolute -top-2 -right-2 h-8 w-8 rounded-full shadow-lg border-2 border-white dark:border-slate-800 z-10 flex items-center justify-center bg-background text-destructive hover:bg-destructive hover:text-white"
                     disabled={isFreePlan}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -485,7 +486,7 @@ function BusinessProfileCard() {
                 </AlertDialogContent>
               </AlertDialog>
             ) : isFreePlan ? (
-              <Button asChild size="icon" variant="outline" className="absolute -bottom-2 -right-2 h-7 w-7 rounded-full bg-background">
+              <Button asChild size="icon" variant="outline" className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-background shadow-lg border-2 border-white dark:border-slate-800 z-10">
                 <Link href="/admin/subscription">
                   <Crown className="h-4 w-4 text-yellow-500" />
                 </Link>
@@ -494,7 +495,7 @@ function BusinessProfileCard() {
               <Button
                 size="icon"
                 variant="outline"
-                className="absolute -bottom-2 -right-2 h-7 w-7 rounded-full bg-background"
+                className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-background shadow-lg border-2 border-white dark:border-slate-800 z-10 flex items-center justify-center text-primary"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
               >
@@ -509,6 +510,7 @@ function BusinessProfileCard() {
             {isFreePlan && <p className="text-xs text-muted-foreground">Passez à un forfait premium pour ajouter votre logo.</p>}
           </div>
         </div>
+        <Separator className="opacity-50" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
           <p className="text-sm font-medium flex items-center gap-2 truncate">
             <Phone className="h-4 w-4 text-muted-foreground" />
@@ -551,21 +553,41 @@ function QuickConnectCard() {
   const form = useForm<PinFormValues>({
     resolver: zodResolver(pinSchema),
     defaultValues: {
-      pin: currentUser?.pin || '',
+      pin: '', // Always start empty for security
     }
   });
 
+  // Do not preload the hashed PIN into the form
   useEffect(() => {
-    form.reset({ pin: currentUser?.pin || '' });
+    form.reset({ pin: '' });
   }, [currentUser, form]);
 
   const handlePinSubmit = async (values: PinFormValues) => {
     if (!currentUser) return;
     showLoader();
     try {
-      await updateUserProfile(currentUser.uid, { pin: values.pin }, currentUser.uid, currentUser.businessId);
+      let pinToSave = values.pin;
+
+      if (pinToSave && pinToSave.length === 4) {
+        // Encrypt PIN before saving
+        pinToSave = await hashPin(pinToSave, currentUser.uid);
+
+        // Also save to local storage for offline access
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(`secure_pin_hash_${currentUser.uid}`, pinToSave);
+        }
+      } else {
+        // Removing PIN
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(`secure_pin_hash_${currentUser.uid}`);
+        }
+        pinToSave = '';
+      }
+
+      await updateUserProfile(currentUser.uid, { pin: pinToSave }, currentUser.uid, currentUser.businessId);
       await refreshCurrentUser();
-      toast({ title: "Code PIN mis à jour", description: "Votre code de connexion rapide a été enregistré." });
+      toast({ title: "Code PIN mis à jour", description: "Votre code de sécurité a été enregistré (chiffré)." });
+      form.reset({ pin: '' });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erreur", description: error.message || "Impossible de mettre à jour le code PIN." });
     } finally {
@@ -582,7 +604,7 @@ function QuickConnectCard() {
           <ShieldCheck className="mr-3 h-6 w-6 text-primary" />
           Connexion Rapide (Code PIN)
         </CardTitle>
-        <CardDescription>Sécurisez l'accès à votre espace avec un code PIN à 4 chiffres à entrer à chaque nouvelle connexion.</CardDescription>
+        <CardDescription>Sécurisez l'accès à votre espace avec un code PIN à 4 chiffres. Il est maintenant chiffré pour plus de sécurité.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -598,7 +620,7 @@ function QuickConnectCard() {
                   <FormControl>
                     <Input type="password" inputMode="numeric" maxLength={4} placeholder="Entrez 4 chiffres" {...field} />
                   </FormControl>
-                  <FormDescription>Laissez vide pour désactiver la connexion par code PIN.</FormDescription>
+                  <FormDescription>Laissez vide et enregistrez pour désactiver le code PIN.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -818,10 +840,17 @@ export default function SettingsPage() {
 
             <div className="p-3 border rounded-md bg-secondary/30">
               {businessProfile?.businessPhoneNumber ? (
-                <div className="flex items-center gap-3 text-green-600">
-                  <CheckCircle className="h-5 w-5" />
-                  <p className="font-semibold text-sm">Votre compte WhatsApp est lié.</p>
-                </div>
+                businessProfile.businessPhoneNumberStatus === 'pending' ? (
+                  <div className="flex items-center gap-3 text-yellow-600">
+                    <Clock className="h-5 w-5" />
+                    <p className="font-semibold text-sm">WhatsApp : En cours d'approbation (24h max)</p>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 text-green-600">
+                    <CheckCircle className="h-5 w-5" />
+                    <p className="font-semibold text-sm">Votre compte WhatsApp est lié.</p>
+                  </div>
+                )
               ) : (
                 <div className="flex items-center gap-3">
                   <MessageSquare className="h-5 w-5 text-yellow-500" />

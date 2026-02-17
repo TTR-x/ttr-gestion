@@ -178,34 +178,21 @@ export async function createOrUpdateBusinessProfile(
   if (!newBusinessId) throw new Error("Impossible de générer un ID pour la nouvelle entreprise.");
 
   if (data.appliedPromoCode) {
-    const cloudflareProxyUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_PROXY_URL;
-    if (!cloudflareProxyUrl) {
-      console.error("CLOUDFLARE_PROXY_URL is not set.");
-      throw new Error("La configuration du service de validation est manquante.");
+    const { verifyPromoCode, sanitizePromoCode } = await import('@/lib/services/promo-service');
+
+    const cleanCode = sanitizePromoCode(data.appliedPromoCode);
+    const result = await verifyPromoCode(cleanCode, newBusinessId, 'inscrit');
+
+    if (!result.success) {
+      console.error('Promo code validation failed:', result.error);
+      throw new Error(result.error || "Code promo invalide ou expiré.");
     }
 
-    const response = await fetch(cloudflareProxyUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        promoCode: data.appliedPromoCode,
-        businessId: newBusinessId,
-        status: 'inscrit',
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Promo code validation failed:', errorText);
-      throw new Error("Code promo invalide ou expiré.");
-    }
-
-    const responseData = await response.json();
-    if (!responseData || !responseData.ambassadorId) {
+    if (!result.ambassadorId) {
       throw new Error("Réponse invalide du service de validation de code promo.");
     }
 
-    referredByAmbassadorId = responseData.ambassadorId;
+    referredByAmbassadorId = result.ambassadorId;
     promoApplied = true;
   }
 
@@ -507,22 +494,19 @@ export async function processSubscriptionRequest(requestId: string, businessId: 
   // --- Notify ABT app about the successful payment if it's an ambassador code ---
   if (promoCode) {
     try {
-      const cloudflareProxyUrl = process.env.CLOUDFLARE_PROXY_URL;
-      if (cloudflareProxyUrl) {
-        // This request is now sent from the server-side action `triggerAbtNotification`
-        // But we keep this structure in case we need to call it from other client-side flows.
-        await fetch(cloudflareProxyUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            promoCode: currentProfile.appliedPromoCode,
-            businessId: businessId,
-            status: 'actif',
-            commissionAmount: requestData.amount,
-          }),
-        });
+      const { notifyAbtActivation } = await import('@/lib/services/promo-service');
+
+      const result = await notifyAbtActivation(
+        currentProfile.appliedPromoCode!,
+        businessId,
+        requestData.amount
+      );
+
+      if (!result.success) {
+        console.warn("Failed to notify ABT app:", result.error);
+        // Non-critical error, do not block the main flow.
       } else {
-        console.warn("CLOUDFLARE_PROXY_URL is not set. Cannot notify partner app.");
+        console.log("ABT app notified successfully about subscription activation");
       }
     } catch (notifyError) {
       console.error("Failed to notify ABT app about subscription activation:", notifyError);

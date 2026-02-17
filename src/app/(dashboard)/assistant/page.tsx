@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -17,6 +16,7 @@ import { logAiFeedback } from '@/lib/firebase/database';
 import { v4 as uuidv4 } from 'uuid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { useSidebar } from '@/components/ui/sidebar';
 
 interface Message extends AssistantMessage {
   id: string;
@@ -33,6 +33,7 @@ function TrixBusinessChat() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { state } = useSidebar();
 
   const getInitials = (name?: string | null) => {
     if (!name) return "U";
@@ -290,11 +291,14 @@ function TrixBusinessChat() {
         </ScrollArea>
       </div>
 
-      <div className="fixed bottom-[90px] md:bottom-12 left-0 right-0 px-4 md:px-12 z-[100] animate-in slide-in-from-bottom-5 duration-700 pointer-events-none">
-        <div className="max-w-4xl mx-auto pointer-events-auto">
-          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[2.5rem] p-2 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.6)] dark:shadow-[0_25px_70px_-15px_rgba(0,0,0,1)] ring-1 ring-black/10 dark:ring-white/20 border-t border-white/40 dark:border-white/10">
+      <div className={cn(
+        "fixed bottom-16 md:bottom-8 left-0 right-0 px-2 md:px-12 z-[40] animate-in slide-in-from-bottom-5 duration-700 pointer-events-none transition-all ease-in-out duration-300",
+        state === "expanded" ? "md:pl-[17rem]" : "md:pl-[5.5rem]"
+      )}>
+        <div className="max-w-6xl mx-auto pointer-events-auto w-full">
+          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[2rem] p-1 shadow-[0_15px_50px_-10px_rgba(0,0,0,0.5)] dark:shadow-[0_15px_50px_-10px_rgba(0,0,0,0.8)] ring-1 ring-black/5 dark:ring-white/10">
             <form onSubmit={handleSubmit} className="relative group">
-              <div className="relative flex items-center bg-slate-100/50 dark:bg-slate-800/50 border border-black/5 dark:border-white/5 rounded-[2rem] pr-2 shadow-inner flex-1">
+              <div className="relative flex items-center bg-slate-100/50 dark:bg-slate-800/50 border border-black/5 dark:border-white/5 rounded-[1.8rem] pr-1.5 shadow-inner flex-1">
                 <Textarea
                   ref={textareaRef}
                   value={input}
@@ -306,21 +310,21 @@ function TrixBusinessChat() {
                     }
                   }}
                   placeholder="Posez votre question..."
-                  className="bg-transparent border-none rounded-[2rem] text-sm md:text-base resize-none focus-visible:ring-0 min-h-[50px] md:min-h-[60px] py-4 pl-6 pr-12 scrollbar-hide overflow-hidden"
+                  className="bg-transparent border-none rounded-[1.8rem] text-sm md:text-base resize-none focus-visible:ring-0 min-h-[44px] md:min-h-[54px] py-3 pl-5 pr-12 scrollbar-hide overflow-hidden"
                   disabled={isLoading}
                 />
                 <Button
                   type="submit"
                   size="icon"
-                  className="absolute -right-3 h-9 w-9 md:h-11 md:w-11 rounded-full bg-primary hover:bg-primary/90 flex-shrink-0 shadow-xl text-primary-foreground transition-all active:scale-95 hover:scale-110 z-10"
+                  className="absolute right-1 w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary hover:bg-primary/90 flex-shrink-0 shadow-lg text-primary-foreground transition-all active:scale-95 hover:scale-105 z-10"
                   disabled={isLoading || !input.trim()}
                 >
-                  {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 md:h-5 md:w-5" />}
                 </Button>
               </div>
             </form>
           </div>
-          <div className="mt-3 text-[9px] text-center text-muted-foreground font-black uppercase tracking-[0.2em] px-4 opacity-30">
+          <div className="mt-2 text-[8px] text-center text-muted-foreground font-black uppercase tracking-[0.2em] px-4 opacity-20">
             TRIX Expert Connecté
           </div>
         </div>

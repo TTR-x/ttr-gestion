@@ -12,9 +12,9 @@
       "$uid": {
         ".write": "auth != null && (newData.child('uid').val() === $uid || !data.exists())",
         ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('email').val() === 'ttrbuzi@gmail.com' || (root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('businessId').val() === data.child('businessId').val()))",
-        ".validate": "newData.hasChildren(['uid', 'email', 'displayName', 'role', 'businessId', 'assignedWorkspaceId']) && newData.child('uid').val() === $uid",
+        ".validate": "newData.hasChildren(['uid', 'email', 'displayName', 'role', 'businessId']) && newData.child('uid').val() === $uid",
         "pin": {
-          ".validate": "newData.isString() && (newData.val().length === 4 || newData.val().length === 0)"
+          ".validate": "newData.isString() && (newData.val().length === 4 || newData.val().length === 0 || newData.val().length === 64)"
         },
         "workspaces": {
           "$workspaceId": {

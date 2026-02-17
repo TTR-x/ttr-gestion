@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { WelcomeSplash } from '@/components/layout/welcome-splash';
 import { addDays } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
+import { hashPin, verifyPinHash } from '@/lib/crypto';
 
 interface SignUpData {
   email: string;
@@ -128,9 +129,12 @@ interface AuthContextType {
   markAsRead: (id: 'all' | string) => void;
   clearNotifications: () => void;
   showLoader: () => void;
+  isSyncing: boolean;
+  setIsSyncing: (isSyncing: boolean) => void;
   pendingReceipts: PendingReceipt[];
   addPendingReceipt: (receipt: Omit<PendingReceipt, 'id' | 'timestamp'>) => void;
   clearPendingReceipts: () => void;
+  resetPinWithPassword: (password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -172,6 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isPinLocked, setIsPinLocked] = useState(false);
   const [isPinVerifiedInSession, setIsPinVerifiedInSession] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [pendingReceipts, setPendingReceipts] = useState<PendingReceipt[]>([]);
 
 
@@ -186,16 +191,148 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [businessProfile]);
 
   const verifyPin = useCallback(async (pin: string): Promise<boolean> => {
-    if (currentUser?.pin === pin) {
+    if (!currentUser) return false;
+
+    // BRUTE FORCE PROTECTION
+    const lockoutKey = `pin_lockout_${currentUser.uid}`;
+    const attemptsKey = `pin_attempts_${currentUser.uid}`;
+    const permanentLockoutKey = `pin_perm_lockout_${currentUser.uid}`;
+
+    const MAX_TEMP_ATTEMPTS = 3;
+    const MAX_PERM_ATTEMPTS = 10;
+    const LOCKOUT_TIME = 60 * 1000; // 1 minute
+
+    if (typeof window !== 'undefined') {
+      // 1. Check Permanent Lockout FIRST
+      if (localStorage.getItem(permanentLockoutKey) === 'true') {
+        toast({
+          variant: 'destructive',
+          title: 'Accès verrouillé',
+          description: "Trop d'échecs (10+). Veuillez réinitialiser avec votre mot de passe pour débloquer."
+        });
+        return false;
+      }
+
+      // 2. Check Temporary Lockout
+      const lockoutTime = localStorage.getItem(lockoutKey);
+      if (lockoutTime && Date.now() < parseInt(lockoutTime)) {
+        const minutesLeft = Math.ceil((parseInt(lockoutTime) - Date.now()) / 60000);
+        toast({
+          variant: 'destructive',
+          title: 'Accès temporairement suspendu',
+          description: `Veuillez patienter ${minutesLeft} minute(s) avant de réessayer.`
+        });
+        return false;
+      }
+    }
+
+    let isValid = false;
+
+    // 1. First check against currentUser (which holds the hash from DB)
+    if (currentUser?.pin) {
+      if (currentUser.pin.length === 64) {
+        // Updated to use Salt (UID)
+        isValid = await verifyPinHash(pin, currentUser.pin, currentUser.uid);
+      } else if (currentUser.pin === pin) {
+        // Legacy plain text check (fallback)
+        isValid = true;
+      }
+    }
+
+    // 2. Offline Fallback: Check localStorage if not validated yet
+    if (!isValid && typeof window !== 'undefined') {
+      const storedHash = localStorage.getItem(`secure_pin_hash_${currentUser.uid}`);
+      if (storedHash) {
+        // Try checking with salt first
+        isValid = await verifyPinHash(pin, storedHash, currentUser.uid);
+      }
+    }
+
+    if (isValid) {
       setIsPinLocked(false);
       setIsPinVerifiedInSession(true);
+      // Clear attempts on success
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(attemptsKey);
+        localStorage.removeItem(lockoutKey);
+        localStorage.removeItem(permanentLockoutKey);
+      }
       return true;
+    } else {
+      // Handle Failure & Lockout
+      if (typeof window !== 'undefined') {
+        const currentAttempts = parseInt(localStorage.getItem(attemptsKey) || '0') + 1;
+        localStorage.setItem(attemptsKey, currentAttempts.toString());
+
+        if (currentAttempts >= MAX_PERM_ATTEMPTS) {
+          // PERMANENT LOCKOUT
+          localStorage.setItem(permanentLockoutKey, 'true');
+          localStorage.removeItem(lockoutKey); // Clear temp lockout
+
+          toast({
+            variant: 'destructive',
+            title: 'Compte verrouillé',
+            description: "Plus de 10 tentatives échouées. L'accès PIN est désactivé. Utilisez 'Code PIN oublié' pour le débloquer."
+          });
+
+        } else if (currentAttempts % MAX_TEMP_ATTEMPTS === 0) {
+          // Temporary Lockout every 3 attempts
+          localStorage.setItem(lockoutKey, (Date.now() + LOCKOUT_TIME).toString());
+          toast({
+            variant: 'destructive',
+            title: 'Accès temporairement suspendu',
+            description: "3 échecs consécutifs. Accès PIN bloqué pour 1 minute."
+          });
+        } else {
+          const remaining = MAX_PERM_ATTEMPTS - currentAttempts;
+          toast({
+            variant: 'destructive',
+            title: 'Code PIN incorrect',
+            description: `Code invalide. ${remaining} essais restants avant verrouillage définitif.`
+          });
+        }
+      }
     }
+
     if (businessId && currentUser && activeWorkspaceId) {
       await logActivity(businessId, activeWorkspaceId, currentUser.uid, 'Tentative de connexion par PIN échouée', {});
     }
     return false;
-  }, [currentUser, businessId, activeWorkspaceId]);
+  }, [currentUser, businessId, activeWorkspaceId, toast]);
+
+  const resetPinWithPassword = async (password: string) => {
+    const user = auth.currentUser;
+    if (!user || !user.email) throw new Error("Utilisateur non trouvé.");
+
+    try {
+      const credential = EmailAuthProvider.credential(user.email, password);
+      await reauthenticateWithCredential(user, credential);
+
+      // Remove PIN from DB
+      const userRef = ref(database, `users/${user.uid}`);
+      await update(userRef, { pin: null });
+
+      // Remove from local storage
+      localStorage.removeItem(`secure_pin_hash_${user.uid}`);
+      localStorage.removeItem(`pin_attempts_${user.uid}`);
+      localStorage.removeItem(`pin_lockout_${user.uid}`);
+      localStorage.removeItem(`pin_perm_lockout_${user.uid}`);
+
+      // Update local state
+      const updatedUser = { ...currentUser!, pin: undefined }; // Remove pin from local user object
+      // Actually refreshCurrentUser will catch it, but updating state immediately is good UI
+
+      setIsPinLocked(false);
+      await refreshCurrentUser();
+
+    } catch (error: any) {
+      console.error("PIN Reset Error", error);
+      if (error.code === 'auth/wrong-password') {
+        throw new Error("Mot de passe incorrect.");
+      }
+      throw error;
+    }
+  };
 
   const addNotification = useCallback((notification: Omit<AppNotification, 'id' | 'read' | 'createdAt'>) => {
     const newNotification: AppNotification = {
@@ -393,6 +530,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
+      // SECURITY: Check local storage for PIN lock immediately (Offline support)
+      if (typeof window !== 'undefined' && !isPinVerifiedInSession) {
+        const storedHash = localStorage.getItem(`secure_pin_hash_${firebaseUser.uid}`);
+        if (storedHash) {
+          console.log("[Auth] Found local PIN hash, locking session.");
+          setIsPinLocked(true);
+        }
+      }
+
       const userProfile = await fetchUserByUid(firebaseUser.uid);
 
       if (!userProfile) {
@@ -438,6 +584,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           // Setup notifications
           setupNotifications(userProfile.uid);
+
+          // --- PIN MIGRATION & LOCAL SYNC ---
+          if (userProfile.pin) {
+            const isHashed = userProfile.pin.length === 64; // Simple SHA-256 hex length check
+
+            if (!isHashed && userProfile.pin.length === 4) {
+              // Migrate legacy PIN to Hash
+              console.log("Migrating legacy PIN to hash...");
+              // Update to use UID as SALT
+              const newHash = await hashPin(userProfile.pin, userProfile.uid);
+
+              // Update DB
+              await updateUserProfile(userProfile.uid, { pin: newHash }, userProfile.uid, userProfile.businessId);
+
+              // Update Local Storage
+              if (typeof window !== 'undefined') {
+                localStorage.setItem(`secure_pin_hash_${userProfile.uid}`, newHash);
+              }
+
+              // Update local userProfile object for this session so we don't use the old one
+              userProfile.pin = newHash;
+            } else if (isHashed) {
+              // Ensure local storage is in sync (for offline use)
+              if (typeof window !== 'undefined') {
+                localStorage.setItem(`secure_pin_hash_${userProfile.uid}`, userProfile.pin);
+              }
+            }
+          } else {
+            // Ensure no stale hash exists
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem(`secure_pin_hash_${userProfile.uid}`);
+            }
+          }
+          // ----------------------------------
 
           const [fetchedBusinessProfile, fetchedGlobalSettings, fetchedWorkspaceSettings, lastRequest] = await Promise.all([
             getBusinessProfile(userProfile.businessId),
@@ -730,7 +910,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const showSplash = loading && !publicPages.some(p => pathname.startsWith(p)) && !pathname.startsWith('/invite') && !isVerificationPage;
 
   return (
-    <AuthContext.Provider value={{ currentUser, businessId, businessProfile, personalizationSettings, workspaceSettings, loading, isAdmin, isSuperAdmin, isSubscriptionActive, login, loginWithPhoneNumberAndPassword, changeUserPassword, sendVerificationEmail, signupAndCreateWorkspace, logout, refreshCurrentUser, refreshAuthContext, switchWorkspace, activeWorkspaceId, usageStats, planDetails, isPinLocked, verifyPin, notifications, addNotification, getCurrencySymbol, markAsRead, clearNotifications, showLoader: () => { }, pendingReceipts, addPendingReceipt, clearPendingReceipts }}>
+    <AuthContext.Provider value={{ currentUser, businessId, businessProfile, personalizationSettings, workspaceSettings, loading, isAdmin, isSuperAdmin, isSubscriptionActive, login, loginWithPhoneNumberAndPassword, changeUserPassword, sendVerificationEmail, signupAndCreateWorkspace, logout, refreshCurrentUser, refreshAuthContext, switchWorkspace, activeWorkspaceId, usageStats, planDetails, isPinLocked, verifyPin, notifications, addNotification, getCurrencySymbol, markAsRead, clearNotifications, showLoader: () => { }, isSyncing, setIsSyncing, pendingReceipts, addPendingReceipt, clearPendingReceipts, resetPinWithPassword }}>
       {showSplash ? <WelcomeSplash /> : children}
     </AuthContext.Provider>
   );

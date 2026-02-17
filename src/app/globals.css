@@ -339,6 +339,28 @@
   }
 }
 
+/* 3. Smooth Elastic Slide from Right (for floating calculator) */
+@keyframes slideInFromRightSmooth {
+  0% {
+    opacity: 0;
+    transform: translateY(-50%) translateX(100px) scale(0.8);
+  }
+
+  60% {
+    opacity: 1;
+    transform: translateY(-50%) translateX(-10px) scale(1.05);
+  }
+
+  80% {
+    transform: translateY(-50%) translateX(5px) scale(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0) scale(1);
+  }
+}
+
 /* Appliquer aux dialogs/modals */
 [data-state="open"][role="dialog"],
 [data-state="open"][class*="dialog"],
@@ -488,6 +510,48 @@ html {
 
 .animate-shake {
   animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+/* Animate-in utility classes */
+.animate-in {
+  animation-duration: 300ms;
+  animation-fill-mode: both;
+}
+
+.fade-in {
+  animation-name: fadeIn;
+}
+
+.slide-in-from-top {
+  animation-name: slideInFromTop;
+}
+
+.slide-in-from-bottom {
+  animation-name: slideInFromBottom;
+}
+
+@keyframes slideInFromTop {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* Smooth transitions globales */

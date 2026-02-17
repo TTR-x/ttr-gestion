@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Wallet, Users, Zap, Briefcase, Bot, RotateCcw } from 'lucide-react';
+import { Wallet, Users, Zap, Briefcase, Bot, RotateCcw, Megaphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface BottomNavItem {
@@ -35,64 +35,33 @@ export function BottomNavigation() {
 
     const handleMouseDown = (e: React.MouseEvent) => {
         if (!isDesktop) return;
-
-        // Prevent default usually stops text selection. 
-        // We use it here to ensure smooth dragging without selecting UI elements.
         e.preventDefault();
-
         const element = navRef.current;
         if (!element) return;
-
         const rect = element.getBoundingClientRect();
-
-        // Initialize position if it's currently centered via CSS
         let currentX = position ? position.x : rect.left;
         let currentY = position ? position.y : rect.top;
-
-        if (!position) {
-            setPosition({ x: currentX, y: currentY });
-        }
-
-        dragRef.current = {
-            startX: e.clientX,
-            startY: e.clientY,
-            initX: currentX,
-            initY: currentY
-        };
-
+        if (!position) setPosition({ x: currentX, y: currentY });
+        dragRef.current = { startX: e.clientX, startY: e.clientY, initX: currentX, initY: currentY };
         const handleMouseMove = (moveEvent: MouseEvent) => {
             if (!dragRef.current) return;
             const dx = moveEvent.clientX - dragRef.current.startX;
             const dy = moveEvent.clientY - dragRef.current.startY;
-
-            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-                setIsDragging(true);
-            }
-
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) setIsDragging(true);
             let newX = dragRef.current.initX + dx;
             let newY = dragRef.current.initY + dy;
-
-            // Clamper pour rester dans l'écran
             const maxX = window.innerWidth - rect.width;
             const maxY = window.innerHeight - rect.height;
-
             newX = Math.max(0, Math.min(newX, maxX));
             newY = Math.max(0, Math.min(newY, maxY));
-
-            setPosition({
-                x: newX,
-                y: newY
-            });
+            setPosition({ x: newX, y: newY });
         };
-
         const handleMouseUp = () => {
             dragRef.current = null;
-            // Small timeout to allow onClick handlers to see isDragging state before we reset it
             setTimeout(() => setIsDragging(false), 50);
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
         };
-
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', handleMouseUp);
     };
@@ -102,30 +71,20 @@ export function BottomNavigation() {
 
     React.useEffect(() => {
         let timeoutId: NodeJS.Timeout;
-
         if (pathname === '/assistant' && !isDesktop) {
-            // Shrink after 3 seconds on assistant page
-            timeoutId = setTimeout(() => {
-                setIsQuickSaleShrunk(true);
-            }, 3000);
+            timeoutId = setTimeout(() => setIsQuickSaleShrunk(true), 3000);
         } else {
-            // Expand after 3 seconds when leaving assistant page (or immediately if not on it initially? 
-            // The request says "reprend sa forme normale... toujours 3 second après")
-            // So we delay the restoration too.
-            timeoutId = setTimeout(() => {
-                setIsQuickSaleShrunk(false);
-            }, 3000);
+            timeoutId = setTimeout(() => setIsQuickSaleShrunk(false), 3000);
         }
-
         return () => clearTimeout(timeoutId);
     }, [pathname, isDesktop]);
 
     const navItems: BottomNavItem[] = [
         {
-            id: 'treasury',
-            label: 'Trésorerie',
-            icon: <Wallet className="h-5 w-5" />,
-            href: '/expenses',
+            id: 'publicity',
+            label: 'Pub',
+            icon: <Megaphone className="h-5 w-5" />,
+            href: '/publicity',
         },
         {
             id: 'clients',
@@ -141,10 +100,10 @@ export function BottomNavigation() {
             isCenter: true,
         },
         {
-            id: 'services',
-            label: 'Prestations',
-            icon: <Briefcase className="h-5 w-5" />,
-            href: '/reservations',
+            id: 'treasury',
+            label: 'Trésorerie',
+            icon: <Wallet className="h-5 w-5" />,
+            href: '/expenses',
         },
         {
             id: 'ai',
@@ -170,7 +129,6 @@ export function BottomNavigation() {
 
         if (href === '/overview#vente-rapide') {
             e.preventDefault();
-
             if (pathname === '/overview' || pathname === '/dashboard' || pathname === '/') {
                 const element = document.getElementById('vente-rapide');
                 if (element) {
@@ -181,20 +139,15 @@ export function BottomNavigation() {
                         rect.top <= (window.innerHeight || document.documentElement.clientHeight) / 2 &&
                         rect.right <= (window.innerWidth || document.documentElement.clientWidth)
                     );
-
                     if (isVisible) {
-                        // Secouer si déjà visible
                         element.classList.remove('animate-shake');
-                        void element.offsetWidth; // Force reflow
+                        void element.offsetWidth;
                         element.classList.add('animate-shake');
                     } else {
-                        // Scroll fluide si pas visible
                         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
                 } else {
-                    // Si l'élément n'est pas trouvé (ex: pas encore chargé), on force la navigation
                     router.push('/overview');
-                    // On réessaie de scroller après un court délai
                     setTimeout(() => {
                         const el = document.getElementById('vente-rapide');
                         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });

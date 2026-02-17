@@ -54,7 +54,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { currentUser, loading, usageStats, planDetails, isAdmin, businessProfile, isPinLocked, addNotification, activeWorkspaceId, showLoader, businessId } = useAuth();
+  const { currentUser, loading, usageStats, planDetails, isAdmin, businessProfile, isPinLocked, addNotification, activeWorkspaceId, showLoader, businessId, setIsSyncing } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
@@ -126,23 +126,11 @@ export default function DashboardLayout({
           }
         }
 
-        const { id: toastId, dismiss } = toast({
-          title: "Synchronisation...",
-          description: "Connexion au serveur en cours...",
-          duration: 1000000,
-        });
-
+        setIsSyncing(true);
         await syncService.initialSync(businessId, activeWorkspaceId, (progress, message) => {
           if (!isMounted) return;
           if (progress >= 100) {
-            dismiss();
-            toast({
-              title: "Synchronisé & Connecté",
-              description: "Vos données sont à jour et votre appareil est actif.",
-              duration: 3000,
-              variant: "default",
-              className: "bg-green-50 dark:bg-green-900 border-green-200"
-            });
+            setIsSyncing(false);
           }
         });
 

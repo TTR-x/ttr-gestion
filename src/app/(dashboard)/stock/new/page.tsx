@@ -297,7 +297,7 @@ export default function NewStockItemPage() {
                 />
 
                 {isForSale && (
-                  <div className="p-4 border rounded-md space-y-4">
+                  <div className="p-4 border rounded-md space-y-4 animate-in fade-in overflow-hidden transition-all duration-300">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField control={form.control} name="purchasePrice" render={({ field }) => (
                         <FormItem>

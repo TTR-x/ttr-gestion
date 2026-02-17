@@ -186,7 +186,7 @@ export default function PersonalizationPage() {
                                                 <div className="grid grid-cols-2 lg:contents gap-4">
                                                     <FormField control={form.control} name={`serviceTypes.${index}.purchasePrice`} render={({ field }) => (
                                                         <FormItem className="space-y-0">
-                                                            <FormLabel className="lg:hidden text-xs font-bold text-muted-foreground mb-1 uppercase">P. Achat</FormLabel>
+                                                            <FormLabel className="lg:hidden text-xs font-bold text-muted-foreground mb-1 uppercase">Prix d'achat</FormLabel>
                                                             <FormControl>
                                                                 <div className="relative">
                                                                     <Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} className="bg-background/50 border-none focus-visible:ring-1 focus-visible:ring-primary h-10 pl-3 pr-8" />
@@ -199,7 +199,7 @@ export default function PersonalizationPage() {
 
                                                     <FormField control={form.control} name={`serviceTypes.${index}.price`} render={({ field }) => (
                                                         <FormItem className="space-y-0">
-                                                            <FormLabel className="lg:hidden text-xs font-bold text-muted-foreground mb-1 uppercase">P. Vente</FormLabel>
+                                                            <FormLabel className="lg:hidden text-xs font-bold text-muted-foreground mb-1 uppercase">Prix de vente</FormLabel>
                                                             <FormControl>
                                                                 <div className="relative">
                                                                     <Input type="number" {...field} className="bg-background/50 border-none focus-visible:ring-1 focus-visible:ring-primary h-10 pl-3 pr-8" />

@@ -29,20 +29,30 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="admin">
+            <Tabs defaultValue="admin" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="admin">Administrateur</TabsTrigger>
                 <TabsTrigger value="employee">Employé</TabsTrigger>
               </TabsList>
-              <TabsContent value="admin" className="pt-4">
-                <LoginForm />
-                <CardFooter className="flex justify-center text-sm pt-6">
-                  <LoginFooter />
-                </CardFooter>
-              </TabsContent>
-              <TabsContent value="employee" className="pt-4">
-                <EmployeePhoneForm />
-              </TabsContent>
+
+              {/* Conteneur avec hauteur minimale pour stabiliser le composant lors du switch */}
+              <div className="min-h-[350px] flex flex-col pt-4">
+                <TabsContent value="admin" className="m-0 mt-0 outline-none focus-visible:ring-0">
+                  <LoginForm />
+                  <div className="flex justify-center text-sm pt-6 mt-auto">
+                    <LoginFooter />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="employee" className="m-0 mt-0 outline-none focus-visible:ring-0">
+                  <div className="space-y-6">
+                    <EmployeePhoneForm />
+                    <div className="text-center pt-8 text-muted-foreground text-sm">
+                      <p>Connectez-vous avec vos identifiants fournis par votre administrateur.</p>
+                    </div>
+                  </div>
+                </TabsContent>
+              </div>
             </Tabs>
           </CardContent>
         </Card>

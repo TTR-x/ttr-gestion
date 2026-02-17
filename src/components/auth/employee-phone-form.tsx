@@ -32,7 +32,7 @@ export function EmployeePhoneForm() {
   const { loginWithPhoneNumberAndPassword } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const form = useForm<EmployeeLoginFormValues>({
     resolver: zodResolver(employeeLoginSchema),
     defaultValues: { countryCode: "+228", phoneNumber: "", password: "" },
@@ -109,32 +109,33 @@ export function EmployeePhoneForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Mot de passe</FormLabel>
-              <div className="relative">
-                <FormControl>
-                    <Input 
-                      type={showPassword ? "text" : "password"} 
-                      placeholder="••••••••" 
-                      {...field} 
-                      disabled={isSubmitting}
-                    />
-                </FormControl>
-                <button 
-                    type="button" 
-                    onClick={() => setShowPassword(!showPassword)} 
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+              <FormControl>
+                <div className="relative isolate">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    {...field}
+                    disabled={isSubmitting}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground z-10"
                     aria-label={showPassword ? "Cacher le mot de passe" : "Afficher le mot de passe"}
                     disabled={isSubmitting}
-                >
+                  >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
+                  </button>
+                </div>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
         <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><KeyRound className="mr-2 h-4 w-4"/>Se connecter</>}
+          {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><KeyRound className="mr-2 h-4 w-4" />Se connecter</>}
         </Button>
       </form>
     </Form>

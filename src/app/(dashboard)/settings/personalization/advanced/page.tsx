@@ -176,8 +176,8 @@ export default function AdvancedPersonalizationPage() {
                                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                                     <div className="hidden lg:grid grid-cols-[1fr,110px,110px,90px,80px] items-center gap-4 px-4 py-2 bg-muted/50 rounded-lg text-xs font-bold uppercase tracking-wider text-muted-foreground">
                                         <span>Nom du service</span>
-                                        <span className="flex items-center gap-1.5"><Wallet className="h-3 w-3" /> Achat</span>
-                                        <span className="flex items-center gap-1.5"><Banknote className="h-3 w-3" /> Vente</span>
+                                        <span className="flex items-center gap-1.5"><Wallet className="h-3 w-3" /> Prix d'achat</span>
+                                        <span className="flex items-center gap-1.5"><Banknote className="h-3 w-3" /> Prix de vente</span>
                                         <span className="flex items-center gap-1.5"><TrendingUp className="h-3 w-3" /> Profit</span>
                                         <span className="text-right">Actions</span>
                                     </div>
@@ -205,7 +205,7 @@ export default function AdvancedPersonalizationPage() {
                                                     <div className="grid grid-cols-2 lg:contents gap-4">
                                                         <FormField control={form.control} name={`serviceTypes.${index}.purchasePrice`} render={({ field }) => (
                                                             <FormItem className="space-y-0">
-                                                                <FormLabel className="lg:hidden text-xs font-bold text-muted-foreground mb-1 uppercase">Achat</FormLabel>
+                                                                <FormLabel className="lg:hidden text-xs font-bold text-muted-foreground mb-1 uppercase">Prix d'achat</FormLabel>
                                                                 <FormControl>
                                                                     <Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} className="bg-background/50 border-none focus-visible:ring-1 focus-visible:ring-primary h-10 px-3" />
                                                                 </FormControl>
@@ -213,7 +213,7 @@ export default function AdvancedPersonalizationPage() {
                                                         )} />
                                                         <FormField control={form.control} name={`serviceTypes.${index}.price`} render={({ field }) => (
                                                             <FormItem className="space-y-0">
-                                                                <FormLabel className="lg:hidden text-xs font-bold text-muted-foreground mb-1 uppercase">Vente</FormLabel>
+                                                                <FormLabel className="lg:hidden text-xs font-bold text-muted-foreground mb-1 uppercase">Prix de vente</FormLabel>
                                                                 <FormControl>
                                                                     <Input type="number" {...field} className="bg-background/50 border-none focus-visible:ring-1 focus-visible:ring-primary h-10 px-3" />
                                                                 </FormControl>

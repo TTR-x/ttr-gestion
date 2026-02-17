@@ -6,8 +6,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/providers/auth-provider";
 import { LoadingProvider } from '@/providers/loading-provider';
 import dynamic from 'next/dynamic';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { TimeSyncGuard } from '@/components/layout/time-sync-guard';
+import { OfflinePage } from '@/components/layout/offline-page';
 
 // Dynamically import ThemeProvider to ensure it's client-side only
 const DynamicThemeProvider = dynamic(() => import('@/providers/dynamic-theme-provider').then(mod => mod.DynamicThemeProvider), { ssr: false });
@@ -17,6 +18,23 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    if (typeof window !== 'undefined') {
+      setIsOnline(navigator.onLine);
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   return (
     <html lang="fr" suppressHydrationWarning>
@@ -48,7 +66,7 @@ export default function RootLayout({
             <AuthProvider>
               <TimeSyncGuard>
                 <div key="layout-wrapper">
-                  {children}
+                  {isOnline ? children : <OfflinePage />}
                 </div>
               </TimeSyncGuard>
             </AuthProvider>

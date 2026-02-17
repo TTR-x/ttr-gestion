@@ -152,6 +152,17 @@ export default function UserManagementPage() {
 
     const handleGenerateInviteLink = async (values: InviteFormValues) => {
         if (!businessId || !currentUser?.uid) return;
+
+        if (!canAddEmployee) {
+            toast({
+                variant: "destructive",
+                title: "Limite atteinte",
+                description: "Votre forfait actuel ne vous permet pas d'ajouter plus d'employés. Passez à la version Premium pour débloquer cette fonctionnalité.",
+                action: <Link href="/admin/subscription" className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 group-[.destructive]:border-muted/40 group-[.destructive]:hover:border-destructive/30 group-[.destructive]:hover:bg-destructive group-[.destructive]:hover:text-destructive-foreground group-[.destructive]:focus:ring-destructive">Passer Premium</Link>
+            });
+            return;
+        }
+
         setGeneratingLink(true);
         try {
             const fullPhoneNumber = `${values.countryCode}${values.phoneNumber}`;
@@ -262,101 +273,58 @@ export default function UserManagementPage() {
             <div className="space-y-8">
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                     <h1 className="text-3xl font-headline font-semibold tracking-tight">Gestion des Utilisateurs</h1>
-                    {isFreePlan ? (
-                        <Button asChild>
-                            <Link href="/admin/subscription" onClick={showLoader}>
-                                <Star className="mr-2 h-4 w-4" /> Passer à Premium pour ajouter
-                            </Link>
-                        </Button>
-                    ) : (
-                        <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
-                            <DialogTrigger asChild>
-                                <Button onClick={openInviteDialog} disabled={!canAddEmployee}>
-                                    <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un employé
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Inviter un Nouvel Employé</DialogTitle>
-                                    <DialogDescription>
-                                        Entrez le numéro de téléphone de l'employé et sélectionnez son espace de travail. Un lien d'invitation unique sera généré.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                {inviteLink ? (
-                                    <div className="space-y-4 py-4">
-                                        <Label>Lien d'invitation généré</Label>
-                                        <div className="flex items-center gap-2">
-                                            <Input value={inviteLink} readOnly />
-                                            <Button size="icon" onClick={copyToClipboard}><Copy className="h-4 w-4" /></Button>
-                                        </div>
-                                        <p className="text-sm text-muted-foreground">Envoyez ce lien à votre employé. Il est valable 24 heures.</p>
-                                        <DialogFooter>
-                                            <Button variant="outline" onClick={() => setInviteLink('')}>Générer un autre lien</Button>
-                                            <a href={`https://wa.me/?text=${encodeURIComponent(`Bonjour, voici votre lien pour rejoindre notre équipe sur TTR Gestion : ${inviteLink}`)}`} target="_blank" rel="noopener noreferrer">
-                                                <Button><MessageSquareCode className="mr-2 h-4 w-4" /> Partager via WhatsApp</Button>
-                                            </a>
-                                        </DialogFooter>
+                    <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button onClick={openInviteDialog}>
+                                <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un employé
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Inviter un Nouvel Employé</DialogTitle>
+                                <DialogDescription>
+                                    Entrez le numéro de téléphone de l'employé et sélectionnez son espace de travail. Un lien d'invitation unique sera généré.
+                                </DialogDescription>
+                            </DialogHeader>
+                            {inviteLink ? (
+                                <div className="space-y-4 py-4">
+                                    <Label>Lien d'invitation généré</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Input value={inviteLink} readOnly />
+                                        <Button size="icon" onClick={copyToClipboard}><Copy className="h-4 w-4" /></Button>
                                     </div>
-                                ) : (
-                                    <Form {...inviteForm}>
-                                        <form onSubmit={inviteForm.handleSubmit(handleGenerateInviteLink)} className="space-y-4 py-4">
-                                            <div className="flex gap-2">
-                                                <FormField
-                                                    control={inviteForm.control}
-                                                    name="countryCode"
-                                                    render={({ field }) => (
-                                                        <FormItem className="w-1/3">
-                                                            <FormLabel>Pays</FormLabel>
-                                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                                <FormControl>
-                                                                    <SelectTrigger>
-                                                                        <SelectValue />
-                                                                    </SelectTrigger>
-                                                                </FormControl>
-                                                                <SelectContent>
-                                                                    {countries.map(c => (
-                                                                        <SelectItem key={c.code} value={c.dial_code}>
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span>{c.flag}</span>
-                                                                                <span>{c.dial_code}</span>
-                                                                            </div>
-                                                                        </SelectItem>
-                                                                    ))}
-                                                                </SelectContent>
-                                                            </Select>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={inviteForm.control}
-                                                    name="phoneNumber"
-                                                    render={({ field }) => (
-                                                        <FormItem className="flex-1">
-                                                            <FormLabel>Numéro (sans indicatif)</FormLabel>
-                                                            <FormControl>
-                                                                <Input placeholder="90123456" {...field} type="tel" />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                            </div>
+                                    <p className="text-sm text-muted-foreground">Envoyez ce lien à votre employé. Il est valable 24 heures.</p>
+                                    <DialogFooter>
+                                        <Button variant="outline" onClick={() => setInviteLink('')}>Générer un autre lien</Button>
+                                        <a href={`https://wa.me/?text=${encodeURIComponent(`Bonjour, voici votre lien pour rejoindre notre équipe sur TTR Gestion : ${inviteLink}`)}`} target="_blank" rel="noopener noreferrer">
+                                            <Button><MessageSquareCode className="mr-2 h-4 w-4" /> Partager via WhatsApp</Button>
+                                        </a>
+                                    </DialogFooter>
+                                </div>
+                            ) : (
+                                <Form {...inviteForm}>
+                                    <form onSubmit={inviteForm.handleSubmit(handleGenerateInviteLink)} className="space-y-4 py-4">
+                                        <div className="flex gap-2">
                                             <FormField
                                                 control={inviteForm.control}
-                                                name="workspaceId"
+                                                name="countryCode"
                                                 render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Espace de Travail</FormLabel>
-                                                        <Select onValueChange={field.onChange} value={field.value}>
+                                                    <FormItem className="w-1/3">
+                                                        <FormLabel>Pays</FormLabel>
+                                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                             <FormControl>
                                                                 <SelectTrigger>
-                                                                    <SelectValue placeholder="Sélectionnez l'espace de travail..." />
+                                                                    <SelectValue />
                                                                 </SelectTrigger>
                                                             </FormControl>
                                                             <SelectContent>
-                                                                {availableWorkspaces.map(ws => (
-                                                                    <SelectItem key={ws.id} value={ws.id}>{ws.name}</SelectItem>
+                                                                {countries.map(c => (
+                                                                    <SelectItem key={c.code} value={c.dial_code}>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span>{c.flag}</span>
+                                                                            <span>{c.dial_code}</span>
+                                                                        </div>
+                                                                    </SelectItem>
                                                                 ))}
                                                             </SelectContent>
                                                         </Select>
@@ -364,19 +332,54 @@ export default function UserManagementPage() {
                                                     </FormItem>
                                                 )}
                                             />
+                                            <FormField
+                                                control={inviteForm.control}
+                                                name="phoneNumber"
+                                                render={({ field }) => (
+                                                    <FormItem className="flex-1">
+                                                        <FormLabel>Numéro (sans indicatif)</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="90123456" {...field} type="tel" />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                        <FormField
+                                            control={inviteForm.control}
+                                            name="workspaceId"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Espace de Travail</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                        <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Sélectionnez l'espace de travail..." />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {availableWorkspaces.map(ws => (
+                                                                <SelectItem key={ws.id} value={ws.id}>{ws.name}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
 
-                                            <DialogFooter>
-                                                <Button type="submit" disabled={generatingLink}>
-                                                    {generatingLink ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LinkIcon className="mr-2 h-4 w-4" />}
-                                                    Générer le lien
-                                                </Button>
-                                            </DialogFooter>
-                                        </form>
-                                    </Form>
-                                )}
-                            </DialogContent>
-                        </Dialog>
-                    )}
+                                        <DialogFooter>
+                                            <Button type="submit" disabled={generatingLink}>
+                                                {generatingLink ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LinkIcon className="mr-2 h-4 w-4" />}
+                                                Générer le lien
+                                            </Button>
+                                        </DialogFooter>
+                                    </form>
+                                </Form>
+                            )}
+                        </DialogContent>
+                    </Dialog>
                 </div>
 
                 <Card className="shadow-lg">

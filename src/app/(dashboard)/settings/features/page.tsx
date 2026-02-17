@@ -13,7 +13,7 @@ const features = [
   {
     icon: ShieldCheck,
     title: "Connexion et Gestion de Compte",
-    description: "Créez votre compte administrateur et votre espace de travail. Connectez-vous en tant qu'administrateur ou employé. Pour plus de sécurité et de rapidité, activez la connexion par code PIN dans les paramètres."
+    description: "Créez votre compte administrateur et votre espace de travail. Connectez-vous en tant qu'administrateur ou employé. Pour plus de sécurité et de rapidité, activez la connexion par code PIN dans les paramètres. Le système inclut désormais une protection anti-force brute renforcée."
   },
   {
     icon: LayoutDashboard,
@@ -93,7 +93,7 @@ const features = [
   {
     icon: Settings,
     title: "Paramètres",
-    description: "Personnalisez l'application : modifiez les infos de votre entreprise, gérez les accès, créez vos propres types de prestations, activez ou désactivez des modules pour les employés, et gérez vos espaces de travail."
+    description: "Personnalisez l'application : modifiez les infos de votre entreprise, gérez les accès, créez vos propres types de prestations, activez ou désactivez des modules pour les employés, et gérez vos espaces de travail. Vous pouvez également lier votre numéro WhatsApp pour recevoir des notifications importantes (soumis à validation sous 24h)."
   },
 ];
 

@@ -59,10 +59,22 @@ function getApiBaseUrl(): string {
  * }
  * ```
  */
+/**
+ * Vérifie un code promo via l'API TTR Gestion
+ * 
+ * @param promoCode - Le code promo à vérifier
+ * @param businessId - L'ID de l'entreprise qui utilise le code
+ * @param status - Le statut de l'utilisation ('inscrit' ou 'actif')
+ * @param clientName - (Optionnel) Le nom du client pour le webhook ABT
+ * @param clientEmail - (Optionnel) L'email du client pour le webhook ABT
+ * @returns Résultat de la vérification avec ambassadorId si succès
+ */
 export async function verifyPromoCode(
     promoCode: string,
     businessId: string,
-    status: 'inscrit' | 'actif' = 'inscrit'
+    status: 'inscrit' | 'actif' = 'inscrit',
+    clientName?: string,
+    clientEmail?: string
 ): Promise<PromoVerificationResult> {
     try {
         const baseUrl = getApiBaseUrl();
@@ -72,6 +84,7 @@ export async function verifyPromoCode(
             promoCode,
             businessId,
             status,
+            clientName,
             apiUrl
         });
 
@@ -84,6 +97,8 @@ export async function verifyPromoCode(
                 promoCode,
                 businessId,
                 status,
+                clientName,
+                clientEmail
             }),
         });
 
@@ -137,13 +152,17 @@ export async function verifyPromoCode(
  * 
  * @param promoCode - Le code promo utilisé
  * @param businessId - L'ID de l'entreprise
- * @param commissionAmount - Le montant de la commission
+ * @param paymentAmount - Le montant TOTAL du paiement (ex: 15000)
+ * @param clientName - Le nom du client (ou business name)
+ * @param clientEmail - L'email du client
  * @returns Résultat de la notification
  */
 export async function notifyAbtActivation(
     promoCode: string,
     businessId: string,
-    commissionAmount: number
+    paymentAmount: number,
+    clientName?: string,
+    clientEmail?: string
 ): Promise<PromoVerificationResult> {
     try {
         const baseUrl = getApiBaseUrl();
@@ -152,7 +171,8 @@ export async function notifyAbtActivation(
         console.log('[PromoService] Notifying ABT activation:', {
             promoCode,
             businessId,
-            commissionAmount
+            paymentAmount,
+            clientName
         });
 
         const response = await fetch(apiUrl, {
@@ -164,7 +184,9 @@ export async function notifyAbtActivation(
                 promoCode,
                 businessId,
                 status: 'actif',
-                commissionAmount, // Optionnel, pour info
+                amount: paymentAmount,
+                clientName,
+                clientEmail
             }),
         });
 

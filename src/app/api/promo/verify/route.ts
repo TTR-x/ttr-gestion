@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-// Schema de validation
+// Schema de validation mis à jour pour correspondre à l'intégration ABT
 const verifyPromoSchema = z.object({
     promoCode: z.string().min(3, "Le code promo doit contenir au moins 3 caractères").max(20, "Le code promo ne peut pas dépasser 20 caractères").regex(/^[A-Z0-9-]+$/i, "Le code promo ne peut contenir que des lettres, chiffres et tirets"),
     businessId: z.string().min(10, "ID d'entreprise invalide"),
     status: z.enum(['inscrit', 'actif']).optional().default('inscrit'),
+    // Nouveaux champs optionnels pour le payload ABT
+    clientName: z.string().optional(),
+    clientEmail: z.string().email().optional(),
+    amount: z.number().optional().default(0),
 });
 
 // Rate limiting simple (en mémoire - pour production, utiliser Redis)
@@ -33,7 +37,6 @@ function checkRateLimit(identifier: string): { allowed: boolean; retryAfter?: nu
     recentRequests.push(now);
     rateLimitMap.set(identifier, recentRequests);
 
-    // Nettoyer les anciennes entrées (évite la fuite mémoire)
     if (recentRequests.length > maxRequests * 2) {
         rateLimitMap.set(identifier, recentRequests.slice(-maxRequests));
     }
@@ -76,108 +79,79 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { promoCode, businessId, status } = validationResult.data;
+        const { promoCode, businessId, status, clientName, clientEmail, amount } = validationResult.data;
 
-        // 3. Vérifier que l'URL du proxy est configurée
-        const cloudflareProxyUrl = process.env.CLOUDFLARE_PROXY_URL;
-        if (!cloudflareProxyUrl) {
-            console.error('[Promo API] CLOUDFLARE_PROXY_URL is not configured');
-            return NextResponse.json(
-                {
-                    success: false, error: "Configuration serveur incomplète. Contactez l'administrateur."
-                },
-                { status: 500 }
-            );
-        }
+        // Configuration ABT
+        const ABT_WEBHOOK_URL = 'https://ton-domaine-abt.vercel.app/api/webhooks/ttr'; // À remplacer par URL prod si différente, ou env var
+        const ABT_API_KEY = 'TTRABTogbsqknlkszfv5GNGDkvfdcbvnnh4865365893';
 
-        console.log('[Promo API] Verifying promo code:', { promoCode, businessId, status, ip });
+        // Construction du payload ABT
+        const eventType = status === 'actif' ? 'SUBSCRIPTION_PAYMENT' : 'CLIENT_SIGNUP';
 
-        // 4. Appeler le proxy Cloudflare
-        const proxyResponse = await fetch(cloudflareProxyUrl, {
+        const payload = {
+            eventType,
+            ambassadorId: promoCode, // Le code promo EST l'ambassadorId
+            clientName: clientName || `Business ${businessId.substring(0, 6)}`, // Fallback si non fourni
+            clientEmail: clientEmail || `no-email-${businessId}@ttr.com`, // Fallback
+            amount: amount || 0
+        };
+
+        console.log(`[Promo API] Sending webhook to ABT (${eventType}):`, { payload, ip });
+
+        // 3. Appel Webhook ABT
+        const abtResponse = await fetch(ABT_WEBHOOK_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'x-api-key': ABT_API_KEY
             },
-            body: JSON.stringify({
-                promoCode,
-                businessId,
-                status,
-            }),
+            body: JSON.stringify(payload),
         });
 
-        if (!proxyResponse.ok) {
-            const errorText = await proxyResponse.text();
-            console.error('[Promo API] Proxy error:', {
-                status: proxyResponse.status,
-                statusText: proxyResponse.statusText,
-                error: errorText,
-                promoCode,
+        // 4. Gestion de la réponse
+        const responseData = await abtResponse.json().catch(() => ({}));
+
+        if (!abtResponse.ok) {
+            console.error('[Promo API] ABT Webhook error:', {
+                status: abtResponse.status,
+                error: responseData.error || abtResponse.statusText,
+                payload
             });
 
-            // Retourner des messages d'erreur utilisateur-friendly
-            if (proxyResponse.status === 404) {
+            if (abtResponse.status === 404) {
                 return NextResponse.json(
-                    { success: false, error: 'Code promo invalide ou expiré.' },
+                    { success: false, error: 'Code promo invalide.' },
                     { status: 404 }
                 );
             }
 
-            if (proxyResponse.status === 400) {
-                return NextResponse.json(
-                    { success: false, error: 'Code promo invalide.' },
-                    { status: 400 }
-                );
-            }
-
+            // En cas d'erreur 500 ou autre du côté ABT, on renvoie une erreur générique mais on log tout
             return NextResponse.json(
-                { success: false, error: 'Erreur lors de la validation du code promo. Veuillez réessayer.' },
-                { status: proxyResponse.status }
+                { success: false, error: responseData.error || 'Erreur lors de la communication avec le programme ambassadeur.' },
+                { status: abtResponse.status }
             );
         }
 
-        // 5. Parser et valider la réponse
-        const responseData = await proxyResponse.json();
+        console.log('[Promo API] ABT Webhook success:', responseData);
 
-        if (!responseData || !responseData.ambassadorId) {
-            console.error('[Promo API] Invalid response from proxy:', responseData);
-            return NextResponse.json(
-                { success: false, error: 'Réponse invalide du service de validation.' },
-                { status: 500 }
-            );
-        }
-
-        console.log('[Promo API] Promo code verified successfully:', {
-            promoCode,
-            ambassadorId: responseData.ambassadorId,
-            businessId,
-        });
-
-        // 6. Retourner le succès
+        // 5. Succès
+        // On renvoie ambassadorId comme étant le code promo validé, car c'est ce que le frontend attend
         return NextResponse.json({
             success: true,
-            ambassadorId: responseData.ambassadorId,
-            message: 'Code promo validé avec succès !',
+            ambassadorId: promoCode,
+            message: responseData.message || 'Code promo validé avec succès !',
+            monoyiEarned: responseData.monoyiEarned
         });
 
     } catch (error: any) {
         console.error('[Promo API] Unexpected error:', error);
-
-        // Différencier les erreurs réseau des autres erreurs
-        if (error.name === 'FetchError' || error.message?.includes('fetch')) {
-            return NextResponse.json(
-                { success: false, error: 'Impossible de contacter le service de validation. Vérifiez votre connexion internet.' },
-                { status: 503 }
-            );
-        }
-
         return NextResponse.json(
-            { success: false, error: 'Une erreur inattendue s\'est produite. Veuillez réessayer.' },
+            { success: false, error: 'Une erreur inattendue s\'est produite.' },
             { status: 500 }
         );
     }
 }
 
-// Méthodes non autorisées
 export async function GET() {
     return NextResponse.json(
         { error: 'Méthode non autorisée. Utilisez POST.' },

@@ -60,7 +60,7 @@ export function PremiumFeatureGuard({ children, pathname }: PremiumFeatureGuardP
     let featureKey = '';
     if (pathname === '/financial-health') featureKey = '/financial-health';
     else if (pathname === '/investments') featureKey = '/investments';
-    else if (pathname.startsWith('/admin') && !pathname.includes('subscription')) featureKey = 'administration';
+    else if (pathname.startsWith('/admin') && !pathname.includes('subscription') && !pathname.includes('number-validation')) featureKey = 'administration';
 
     const feature = featureKey ? PREMIUM_FEATURES_MAP[featureKey] : null;
     const isFreePlan = !businessProfile?.subscriptionType || businessProfile?.subscriptionType === 'gratuit';

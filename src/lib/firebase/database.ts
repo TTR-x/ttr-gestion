@@ -181,7 +181,9 @@ export async function createOrUpdateBusinessProfile(
     const { verifyPromoCode, sanitizePromoCode } = await import('@/lib/services/promo-service');
 
     const cleanCode = sanitizePromoCode(data.appliedPromoCode);
-    const result = await verifyPromoCode(cleanCode, newBusinessId, 'inscrit');
+    // Pass business name and user email for ABT webhook
+    const userEmail = userSnapshot.exists() ? userSnapshot.val().email : undefined;
+    const result = await verifyPromoCode(cleanCode, newBusinessId, 'inscrit', data.name, userEmail);
 
     if (!result.success) {
       console.error('Promo code validation failed:', result.error);
@@ -499,7 +501,9 @@ export async function processSubscriptionRequest(requestId: string, businessId: 
       const result = await notifyAbtActivation(
         currentProfile.appliedPromoCode!,
         businessId,
-        requestData.amount
+        requestData.amount,
+        requestData.businessName || currentProfile.name, // Use request business name or profile name
+        requestData.userEmail || undefined
       );
 
       if (!result.success) {

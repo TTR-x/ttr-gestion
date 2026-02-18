@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
         const { promoCode, businessId, status, clientName, clientEmail, amount } = validationResult.data;
 
         // Configuration ABT
-        const ABT_WEBHOOK_URL = 'https://ton-domaine-abt.vercel.app/api/webhooks/ttr'; // À remplacer par URL prod si différente, ou env var
+        const ABT_WEBHOOK_URL = 'https://ambassadeur.ttrgestion.site/api/webhooks/ttr';
         const ABT_API_KEY = 'TTRABTogbsqknlkszfv5GNGDkvfdcbvnnh4865365893';
 
         // Construction du payload ABT
@@ -90,13 +90,15 @@ export async function POST(request: NextRequest) {
 
         const payload = {
             eventType,
-            ambassadorId: promoCode, // Le code promo EST l'ambassadorId
-            clientName: clientName || `Business ${businessId.substring(0, 6)}`, // Fallback si non fourni
-            clientEmail: clientEmail || `no-email-${businessId}@ttr.com`, // Fallback
-            amount: amount || 0
+            ambassadorId: promoCode, // Le code promo EST l'ambassadorId selon la doc
+            promoCode: promoCode,     // Ajouté par sécurité si le champ a changé
+            clientName: clientName || `Business ${businessId.substring(0, 6)}`,
+            clientEmail: clientEmail || `no-email-${businessId}@ttr.com`,
+            amount: amount || 0,
+            businessId: businessId    // Ajouté pour info
         };
 
-        console.log(`[Promo API] Sending webhook to ABT (${eventType}):`, { payload, ip });
+        console.log(`[Promo API] Sending webhook to ABT (${eventType}) - URL: ${ABT_WEBHOOK_URL}`);
 
         // 3. Appel Webhook ABT
         const abtResponse = await fetch(ABT_WEBHOOK_URL, {
@@ -114,20 +116,17 @@ export async function POST(request: NextRequest) {
         if (!abtResponse.ok) {
             console.error('[Promo API] ABT Webhook error:', {
                 status: abtResponse.status,
-                error: responseData.error || abtResponse.statusText,
+                error: responseData.error || responseData.message || abtResponse.statusText,
                 payload
             });
 
-            if (abtResponse.status === 404) {
-                return NextResponse.json(
-                    { success: false, error: 'Code promo invalide.' },
-                    { status: 404 }
-                );
-            }
-
-            // En cas d'erreur 500 ou autre du côté ABT, on renvoie une erreur générique mais on log tout
+            // On retourne l'erreur spécifique de l'app ambassadeur si elle existe
             return NextResponse.json(
-                { success: false, error: responseData.error || 'Erreur lors de la communication avec le programme ambassadeur.' },
+                {
+                    success: false,
+                    error: responseData.error || responseData.message || 'Code promo non trouvé ou invalide sur le service Ambassadeur.',
+                    details: responseData.error ? 'ABT_ERROR' : 'API_ERROR'
+                },
                 { status: abtResponse.status }
             );
         }
@@ -135,7 +134,6 @@ export async function POST(request: NextRequest) {
         console.log('[Promo API] ABT Webhook success:', responseData);
 
         // 5. Succès
-        // On renvoie ambassadorId comme étant le code promo validé, car c'est ce que le frontend attend
         return NextResponse.json({
             success: true,
             ambassadorId: promoCode,

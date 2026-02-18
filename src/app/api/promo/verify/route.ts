@@ -82,26 +82,34 @@ export async function POST(request: NextRequest) {
         const { promoCode, businessId, status, clientName, clientEmail, amount } = validationResult.data;
 
         // Configuration ABT
-        const ABT_WEBHOOK_URL = 'https://ambassadeur.ttrgestion.site/api/webhooks/ttr';
+        const ABT_BASE_URL = 'https://ambassadeur.ttrgestion.site';
         const ABT_API_KEY = 'TTRABTogbsqknlkszfv5GNGDkvfdcbvnnh4865365893';
+
+        // Choix de l'endpoint en fonction du statut
+        const isNotification = status === 'inscrit' || status === 'actif';
+        const targetEndpoint = isNotification ? '/api/webhooks/ttr' : '/api/promo/verify';
+        const fullUrl = `${ABT_BASE_URL}${targetEndpoint}`;
 
         // Construction du payload ABT
         const eventType = status === 'actif' ? 'SUBSCRIPTION_PAYMENT' : 'CLIENT_SIGNUP';
 
-        const payload = {
-            eventType,
-            ambassadorId: promoCode, // Le code promo EST l'ambassadorId selon la doc
-            promoCode: promoCode,     // Ajouté par sécurité si le champ a changé
-            clientName: clientName || `Business ${businessId.substring(0, 6)}`,
-            clientEmail: clientEmail || `no-email-${businessId}@ttr.com`,
-            amount: amount || 0,
-            businessId: businessId    // Ajouté pour info
+        const payload: any = {
+            ambassadorId: promoCode,
+            promoCode: promoCode, // Double champ pour flexibilité
         };
 
-        console.log(`[Promo API] Sending webhook to ABT (${eventType}) - URL: ${ABT_WEBHOOK_URL}`);
+        if (isNotification) {
+            payload.eventType = eventType;
+            payload.clientName = clientName || `Business ${businessId.substring(0, 6)}`;
+            payload.clientEmail = clientEmail || `no-email-${businessId}@ttr.com`;
+            payload.amount = amount || 0;
+            payload.businessId = businessId;
+        }
 
-        // 3. Appel Webhook ABT
-        const abtResponse = await fetch(ABT_WEBHOOK_URL, {
+        console.log(`[Promo API] Sending to ABT - Endpoint: ${targetEndpoint} - Promo: ${promoCode}`);
+
+        // 3. Appel API ABT
+        const abtResponse = await fetch(fullUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -114,13 +122,13 @@ export async function POST(request: NextRequest) {
         const responseData = await abtResponse.json().catch(() => ({}));
 
         if (!abtResponse.ok) {
-            console.error('[Promo API] ABT Webhook error:', {
+            console.error('[Promo API] ABT error:', {
                 status: abtResponse.status,
+                endpoint: targetEndpoint,
                 error: responseData.error || responseData.message || abtResponse.statusText,
                 payload
             });
 
-            // On retourne l'erreur spécifique de l'app ambassadeur si elle existe
             return NextResponse.json(
                 {
                     success: false,
@@ -131,13 +139,13 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        console.log('[Promo API] ABT Webhook success:', responseData);
+        console.log('[Promo API] ABT success:', responseData);
 
         // 5. Succès
         return NextResponse.json({
             success: true,
             ambassadorId: promoCode,
-            message: responseData.message || 'Code promo validé avec succès !',
+            message: responseData.message || 'Opération réussie !',
             monoyiEarned: responseData.monoyiEarned
         });
 

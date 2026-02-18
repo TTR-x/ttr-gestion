@@ -196,25 +196,34 @@ export default function VerifyEmailPage() {
                                     </div>
                                 ) : (
                                     <div className="space-y-4 pt-4 animate-in slide-in-from-bottom-4 duration-500">
-                                        <div className="aspect-video bg-black rounded-2xl overflow-hidden relative flex items-center justify-center border border-white/10 shadow-2xl">
-                                            {/* Placeholder Video - Link to be added later */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                                            <img
-                                                src={selectedDevice === 'mobile'
-                                                    ? "https://images.unsplash.com/photo-1512428559087-560fa5ceab42?auto=format&fit=crop&q=80&w=800"
-                                                    : "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=800"
-                                                }
-                                                className="absolute inset-0 w-full h-full object-cover opacity-60"
-                                                alt="Tutorial thumbnail"
-                                            />
-                                            <div className="relative z-10 flex flex-col items-center gap-3">
-                                                <div className="h-16 w-16 bg-primary rounded-full flex items-center justify-center shadow-2xl">
-                                                    <PlayCircle className="h-8 w-8 text-white fill-current ml-0.5" />
-                                                </div>
-                                                <p className="text-white font-bold text-sm bg-black/50 px-4 py-1.5 rounded-full backdrop-blur-sm border border-white/20">
-                                                    Tutoriel {selectedDevice === 'mobile' ? 'Mobile' : 'PC'}
-                                                </p>
-                                            </div>
+                                        <div className="aspect-video bg-black rounded-2xl overflow-hidden relative border border-white/10 shadow-2xl">
+                                            {selectedDevice === 'pc' ? (
+                                                <iframe
+                                                    className="w-full h-full"
+                                                    src="https://www.youtube.com/embed/lDJyp5qTQW0?si=0N4Tlvs5dJEfM1ik"
+                                                    title="YouTube video player"
+                                                    frameBorder="0"
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                    allowFullScreen
+                                                ></iframe>
+                                            ) : (
+                                                <>
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                                                    <img
+                                                        src="https://images.unsplash.com/photo-1512428559087-560fa5ceab42?auto=format&fit=crop&q=80&w=800"
+                                                        className="absolute inset-0 w-full h-full object-cover opacity-60"
+                                                        alt="Tutorial mobile thumbnail"
+                                                    />
+                                                    <div className="relative z-10 flex flex-col items-center justify-center h-full gap-3">
+                                                        <div className="h-16 w-16 bg-primary rounded-full flex items-center justify-center shadow-2xl">
+                                                            <PlayCircle className="h-8 w-8 text-white fill-current ml-0.5" />
+                                                        </div>
+                                                        <p className="text-white font-bold text-sm bg-black/50 px-4 py-1.5 rounded-full backdrop-blur-sm border border-white/20">
+                                                            Tutoriel Mobile (Bientôt)
+                                                        </p>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
                                         <Button
                                             variant="secondary"

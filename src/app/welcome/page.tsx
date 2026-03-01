@@ -42,7 +42,7 @@ export default function WelcomePage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
             <div className="w-full max-w-2xl space-y-8 animate-in fade-in zoom-in duration-700">
-                <RegistrationProgress currentStep={5} />
+                <RegistrationProgress currentStep={3} />
 
                 <div className="text-center space-y-2">
                     <div className="flex justify-center mb-4">

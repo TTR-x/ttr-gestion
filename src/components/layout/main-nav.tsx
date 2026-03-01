@@ -165,6 +165,7 @@ export function MainNav() {
             finalNav.push({ href: "/games", label: "Jeux", icon: Puzzle, isPremium: isGamesPremium });
         }
 
+        finalNav.push({ href: "/gifts", label: "Cadeaux", icon: Gift });
         finalNav.push({ href: "/videos", label: "Vidéos", icon: Video });
 
         if (isAdmin) {

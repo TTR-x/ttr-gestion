@@ -281,6 +281,7 @@ export const localImageService = {
         if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
             const cached = await db.localImages.where('cloudinaryUrl').equals(imageUrl).first();
             if (cached) {
+                // Use local blob for speed/offline
                 return URL.createObjectURL(cached.blob);
             }
             return imageUrl;
@@ -293,12 +294,98 @@ export const localImageService = {
 
             if (!localImage) return null;
 
-            // If uploaded, return Cloudinary URL (or blob if we want to save bandwidth, but Cloudinary is safer for persistence)
-            // Actually, if we have the blob, blob is faster.
+            // Return blob URL for display (fastest)
             return URL.createObjectURL(localImage.blob);
         }
 
         return imageUrl;
+    },
+
+    /**
+     * Get the best "public" URL for an image.
+     * If a local:// URL has been uploaded to Cloudinary, returns the Cloudinary URL.
+     * Use this before syncing to Firebase.
+     */
+    async getPublicUrl(imageUrl: string): Promise<string> {
+        if (!imageUrl || !imageUrl.startsWith('local://')) return imageUrl;
+
+        const imageId = imageUrl.replace('local://', '');
+        const localImage = await db.localImages.get(imageId);
+
+        if (localImage && localImage.uploadStatus === 'uploaded' && localImage.cloudinaryUrl) {
+            return localImage.cloudinaryUrl;
+        }
+
+        return imageUrl;
+    },
+
+    /**
+     * Scan database for any entities using local:// URLs that have been uploaded
+     * and update them to use Cloudinary URLs.
+     */
+    async repairLocalUrls(): Promise<void> {
+        console.log('[ImageSync] Starting repair of local URLs...');
+        try {
+            const stockItems = await db.stock.toArray();
+            const localImages = await db.localImages.where('uploadStatus').equals('uploaded').toArray();
+
+            const imageMap = new Map(localImages.map(img => [`local://${img.id}`, img.cloudinaryUrl]));
+
+            let updatedCount = 0;
+            // 1. Repair stock items
+            for (const item of stockItems) {
+                if (item.imageUrl && item.imageUrl.startsWith('local://') && imageMap.has(item.imageUrl)) {
+                    const cloudinaryUrl = imageMap.get(item.imageUrl)!;
+
+                    const updatedItem = {
+                        ...item,
+                        imageUrl: cloudinaryUrl,
+                        updatedAt: Date.now()
+                    };
+
+                    await db.stock.put(updatedItem);
+                    await db.syncQueue.add({
+                        collection: 'stock',
+                        action: 'update',
+                        data: updatedItem,
+                        timestamp: Date.now()
+                    });
+                    updatedCount++;
+                }
+            }
+
+            // 2. Repair business profile logo
+            const businessMetadata = await db.syncMetadata.get('businessProfile');
+            if (businessMetadata && businessMetadata.value &&
+                businessMetadata.value.logoUrl &&
+                businessMetadata.value.logoUrl.startsWith('local://') &&
+                imageMap.has(businessMetadata.value.logoUrl)) {
+
+                const cloudinaryUrl = imageMap.get(businessMetadata.value.logoUrl)!;
+                const updatedProfile = {
+                    ...businessMetadata.value,
+                    logoUrl: cloudinaryUrl,
+                    updatedAt: Date.now()
+                };
+
+                await db.syncMetadata.put({
+                    key: 'businessProfile',
+                    value: updatedProfile,
+                    updatedAt: Date.now()
+                });
+                // Note: The business profile is usually synced differently (realtime DB directly or via profile sync)
+                // But this covers the metadata record.
+                console.log('[ImageSync] Repaired business logo URL.');
+                updatedCount++;
+            }
+
+            if (updatedCount > 0) {
+                console.log(`[ImageSync] Repaired ${updatedCount} local URLs. Triggering sync...`);
+                if (this.onSyncRequired) this.onSyncRequired();
+            }
+        } catch (error) {
+            console.error('[ImageSync] Repair failed:', error);
+        }
     },
 
     /**

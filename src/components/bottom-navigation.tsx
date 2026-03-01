@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Wallet, Users, Zap, Briefcase, Bot, RotateCcw, Megaphone } from 'lucide-react';
+import { Wallet, Users, Zap, Briefcase, Bot, RotateCcw, Megaphone, Gift } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface BottomNavItem {

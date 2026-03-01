@@ -40,6 +40,7 @@ import { DeviceOverrideDialog } from '@/components/settings/device-override-dial
 
 import { syncService } from '@/lib/sync-service';
 import { sendDeviceOverrideEmail } from '@/lib/email/device-override-email';
+import { WelcomeVideoDialog } from '@/components/layout/welcome-video-dialog';
 
 // These are the main navigation routes. Any route not in this list will be considered an "annex" page.
 const mainRoutes = [
@@ -149,7 +150,7 @@ export default function DashboardLayout({
       setIsVerifyingPresence(false);
       setIsBlocked(false);
     }
-  }, [currentUser, businessId, activeWorkspaceId, businessProfile, toast]);
+  }, [currentUser?.uid, businessId, activeWorkspaceId]);
 
 
   // Real-time Block/Unblock Listener
@@ -194,7 +195,7 @@ export default function DashboardLayout({
     });
 
     return () => unsubscribe();
-  }, [businessId, isBlocked, businessProfile]);
+  }, [businessId, isBlocked, businessProfile?.subscriptionType]);
 
   // Free plan premium banner logic
   useEffect(() => {
@@ -212,7 +213,7 @@ export default function DashboardLayout({
       setIsPremiumBannerVisible(false);
     }
 
-  }, [businessProfile]);
+  }, [businessProfile?.subscriptionType]);
 
   // Reminder and Notification Permission logic
   useEffect(() => {
@@ -264,7 +265,7 @@ export default function DashboardLayout({
 
     return () => clearInterval(intervalId);
 
-  }, [currentUser, activeWorkspaceId, addNotification]);
+  }, [currentUser?.uid, activeWorkspaceId, addNotification]);
 
   // Logic for the permanently dismissible help button
   useEffect(() => {
@@ -384,7 +385,7 @@ export default function DashboardLayout({
 
           <Button
             variant="outline"
-            className="w-full text-orange-600 border-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950"
+            className="w-full text-orange-600 border-orange-600 hover:bg-orange-600 hover:text-white dark:hover:bg-orange-700 dark:hover:text-white transition-colors"
             onClick={() => setShowOverrideDialog(true)}
           >
             <AlertTriangle className="mr-2 h-4 w-4" />
@@ -549,6 +550,7 @@ export default function DashboardLayout({
           userEmail={currentUser?.email || ''}
           isLoading={isOverrideLoading}
         />
+        <WelcomeVideoDialog />
       </SidebarProvider>
     </GlobalSearchProvider>
   );

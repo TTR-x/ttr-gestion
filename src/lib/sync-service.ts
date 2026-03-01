@@ -741,6 +741,9 @@ if (typeof window !== 'undefined') {
         try {
             await localImageService.processUploadQueue();
             console.log('Image upload queue processed');
+
+            // Fix any entities stuck with local:// URLs that were just uploaded
+            await localImageService.repairLocalUrls();
         } catch (error) {
             console.error('Error processing image upload queue:', error);
         }
@@ -749,6 +752,7 @@ if (typeof window !== 'undefined') {
     // Trigger on first load if online
     if (navigator.onLine) {
         syncService.syncToCloud();
+        localImageService.repairLocalUrls().catch(err => console.error("Initial image repair failed:", err));
     }
 
     // Register callback for image service to trigger sync after background uploads

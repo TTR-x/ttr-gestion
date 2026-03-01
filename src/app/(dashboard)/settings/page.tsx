@@ -698,7 +698,7 @@ function DangerZoneCard() {
           </p>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" disabled={activeWorkspace?.isPrimary}>
+              <Button variant="destructive" disabled={true}>
                 <Trash2 className="mr-2 h-4 w-4" /> Supprimer cet espace de travail
               </Button>
             </AlertDialogTrigger>
@@ -723,7 +723,7 @@ function DangerZoneCard() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          {activeWorkspace?.isPrimary && <p className="text-xs text-destructive mt-2">Vous ne pouvez pas supprimer votre espace de travail principal.</p>}
+          <p className="text-xs text-destructive mt-2">La suppression est actuellement désactivée pour des raisons de sécurité. Veuillez contacter le support si nécessaire.</p>
         </div>
 
         {/* Delete Business */}
@@ -731,35 +731,17 @@ function DangerZoneCard() {
           <div className="p-4 border rounded-md">
             <h3 className="font-semibold">Supprimer l'entreprise entière</h3>
             <p className="text-sm text-muted-foreground mt-1 mb-3">
-              Toutes les données de l'entreprise "{businessProfile?.name}", y compris tous les espaces de travail et les comptes utilisateurs, seront définitivement supprimées.
+              Toutes les données de l'entreprise "{businessProfile?.name}", y compris tous les espaces de travail et les comptes utilisateurs, seront définitivement supprimées. (Action désactivée)
             </p>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="bg-red-800 hover:bg-red-900" disabled>
+                <Button variant="destructive" className="bg-red-800 hover:bg-red-900" disabled={true}>
                   <Trash2 className="mr-2 h-4 w-4" /> Supprimer l'entreprise
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>C'est une action TRÈS DANGEREUSE</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Cette action supprimera l'entreprise <strong>{businessProfile?.name}</strong>, tous ses espaces, données et comptes. Pour confirmer, tapez le nom de l'entreprise ci-dessous.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <Input
-                  placeholder={`Tapez "${businessProfile?.name}"`}
-                  value={confirmationText}
-                  onChange={e => setConfirmationText(e.target.value)}
-                />
-                <AlertDialogFooter>
-                  <AlertDialogCancel onClick={() => setConfirmationText('')}>Annuler</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteBusiness} className="bg-red-800 hover:bg-red-900" disabled={isLoading || confirmationText !== businessProfile?.name}>
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Je comprends les conséquences, tout supprimer
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
+              {/* Le contenu du dialogue reste pour la structure mais le bouton trigger est désactivé */}
             </AlertDialog>
+            <p className="text-xs text-destructive mt-2 font-medium">La suppression totale de l'entreprise est désactivée. Contactez le support technique pour cette opération.</p>
           </div>
         )}
       </CardContent>

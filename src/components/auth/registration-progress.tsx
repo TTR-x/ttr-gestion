@@ -9,16 +9,14 @@ interface RegistrationProgressProps {
 const steps = [
     "Création de compte",
     "Configuration",
-    "Validation email",
-    "WhatsApp",
-    "Bienvenue"
+    "WhatsApp"
 ];
 
 export function RegistrationProgress({ currentStep }: RegistrationProgressProps) {
     return (
         <div className="w-full px-4 mb-8">
             <div className="flex gap-2 max-w-md mx-auto">
-                {[1, 2, 3, 4, 5].map((step) => {
+                {[1, 2, 3].map((step) => {
                     const isActive = step <= currentStep;
                     const isCurrent = step === currentStep;
 

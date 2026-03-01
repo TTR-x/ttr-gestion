@@ -1668,3 +1668,47 @@ export async function requestPayout(
     requestId: newRequestRef.key
   });
 }
+
+// --- User Gifts Management (Realtime DB) ---
+export async function addGiftToUser(
+  businessId: string,
+  targetUid: string,
+  giftData: Omit<UserGift, 'id' | 'unlockedAt' | 'status'>,
+  actorUid: string
+): Promise<void> {
+  // Security check for Admin will be handled by the page calling this, 
+  // but DB rules should also enforce it.
+  const giftsRef = dbRef(database, `users/${targetUid}/gifts`);
+  const newGiftRef = push(giftsRef);
+  const newGift: UserGift = {
+    ...giftData,
+    id: newGiftRef.key!,
+    status: 'available',
+    unlockedAt: Date.now(),
+  };
+
+  await set(newGiftRef, newGift);
+  await logActivity(businessId, businessId, actorUid, `Cadeau attribué à un utilisateur`, {
+    targetUser: targetUid,
+    giftTitle: giftData.title
+  });
+}
+
+export async function updateGiftStatus(
+  targetUid: string,
+  giftId: string,
+  status: 'claimed',
+  businessId: string
+): Promise<void> {
+  const giftRef = dbRef(database, `users/${targetUid}/gifts/${giftId}`);
+  await update(giftRef, {
+    status,
+    claimedAt: Date.now()
+  });
+
+  if (businessId) {
+    await logActivity(businessId, businessId, targetUid, `Réclamation d'un cadeau`, {
+      giftId
+    });
+  }
+}

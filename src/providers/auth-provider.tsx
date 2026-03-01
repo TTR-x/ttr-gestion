@@ -722,7 +722,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // --- ENREGISTREMENT FLOW STEPS ---
 
     // 1. Business profile setup check (Step 2)
-    // We check both the state and the currentUser object for robustness
     if (currentUser.role === 'admin' && (!businessId || !businessProfile)) {
       if (!isSetupPage) {
         router.replace(setupPage);
@@ -730,30 +729,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // 2. Email verification check (Step 3) - Only if business is set up
-    if (!currentUser.emailVerified) {
-      if (!isVerificationPage) {
-        router.replace(verificationPage);
-      }
-      return;
-    }
-
-    // 3. Business phone number check (Step 4) (only for admins)
-    // We check both the business profile AND the user's own document
+    // 2. Business phone number check (Step 3) (only for admins)
     const userHasPhone = !!currentUser?.phoneNumber;
     const businessHasPhone = !!businessProfile?.businessPhoneNumber;
 
     if (currentUser.role === 'admin' && !userHasPhone && !businessHasPhone) {
       if (!isNumberValidationPage) {
         router.replace(numberValidationPage);
-      }
-      return;
-    }
-
-    // 4. Onboarding/Welcome check (Step 5)
-    if (currentUser.role === 'admin' && !currentUser.onboardingCompleted) {
-      if (!isWelcomePage) {
-        router.replace('/welcome');
       }
       return;
     }

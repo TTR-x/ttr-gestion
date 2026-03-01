@@ -433,3 +433,15 @@ export interface AppVideo {
   category?: string;
   createdAt: number;
 }
+
+export interface UserGift {
+  id: string;
+  title: string;
+  description: string;
+  rewardText: string;
+  imageUrl?: string;
+  type: 'promo' | 'loyalty' | 'achievement';
+  status: 'available' | 'claimed';
+  unlockedAt: number;
+  claimedAt?: number;
+}

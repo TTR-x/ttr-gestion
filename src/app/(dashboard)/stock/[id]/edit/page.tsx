@@ -21,6 +21,7 @@ import { Separator } from "@/components/ui/separator";
 import { ResolvedImage } from '@/components/ui/resolved-image';
 import { Label } from "@/components/ui/label";
 import { uploadToCloudinary } from '@/lib/cloudinary';
+import { localImageService } from '@/lib/local-image-service';
 
 import type { StockItem } from "@/lib/types";
 import { db } from "@/lib/db";
@@ -136,14 +137,18 @@ export default function EditStockItemPage() {
         }
 
         try {
-            const imageUrl = await uploadToCloudinary(file);
-            setImagePreview(imageUrl);
+            // Save locally and queue for background Cloudinary upload
+            const localUrl = await localImageService.saveImageLocally(file);
+            setImagePreview(localUrl);
 
-            if (!isOffline) {
-                toast({ title: "Image téléversée avec succès !" });
-            }
+            toast({
+                title: "Image mise à jour",
+                description: isOffline
+                    ? "Les changements seront synchronisés dès le retour de la connexion."
+                    : "Téléversement en arrière-plan..."
+            });
         } catch (error: any) {
-            toast({ variant: "destructive", title: "Échec du téléversement", description: error.message });
+            toast({ variant: "destructive", title: "Échec de l'enregistrement", description: error.message });
             setImagePreview(null);
         } finally {
             setIsUploading(false);
@@ -159,6 +164,9 @@ export default function EditStockItemPage() {
         }
         showLoader();
         try {
+            // Resolve to public URL if already uploaded
+            const finalImageUrl = await localImageService.getPublicUrl(imagePreview || '');
+
             const updatedItem: StockItem = {
                 ...item,
                 name: values.name,
@@ -167,7 +175,7 @@ export default function EditStockItemPage() {
                 isForSale: values.isForSale,
                 lowStockThreshold: values.lowStockThreshold,
                 purchasePrice: values.purchasePrice,
-                imageUrl: imagePreview || '',
+                imageUrl: finalImageUrl,
                 price: values.isForSale ? values.price : undefined,
                 updatedAt: Date.now(),
                 updatedBy: currentUser.displayName || 'Unknown',

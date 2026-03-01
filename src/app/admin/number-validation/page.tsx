@@ -15,6 +15,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Phone, MessageSquare, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { AppLogo } from '@/components/layout/app-logo';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogContent,
@@ -25,11 +32,61 @@ import {
 } from "@/components/ui/alert-dialog";
 import { RegistrationProgress } from "@/components/auth/registration-progress";
 
+const countryPhoneData = [
+    { country: "Bénin", code: "+229", flag: "🇧🇯" },
+    { country: "Burkina Faso", code: "+226", flag: "🇧🇫" },
+    { country: "Cap-Vert", code: "+238", flag: "🇨🇻" },
+    { country: "Côte d'Ivoire", code: "+225", flag: "🇨🇮" },
+    { country: "Gambie", code: "+220", flag: "🇬🇲" },
+    { country: "Ghana", code: "+233", flag: "🇬🇭" },
+    { country: "Guinée", code: "+224", flag: "🇬🇳" },
+    { country: "Guinée-Bissau", code: "+245", flag: "🇬🇼" },
+    { country: "Liberia", code: "+231", flag: "🇱🇷" },
+    { country: "Mali", code: "+223", flag: "🇲🇱" },
+    { country: "Mauritanie", code: "+222", flag: "🇲🇷" },
+    { country: "Niger", code: "+227", flag: "🇳🇪" },
+    { country: "Nigeria", code: "+234", flag: "🇳🇬" },
+    { country: "Sénégal", code: "+221", flag: "🇸🇳" },
+    { country: "Sierra Leone", code: "+232", flag: "🇸🇱" },
+    { country: "Togo", code: "+228", flag: "🇹🇬" },
+    { country: "Cameroun", code: "+237", flag: "🇨🇲" },
+    { country: "République centrafricaine", code: "+236", flag: "🇨🇫" },
+    { country: "Tchad", code: "+235", flag: "🇹🇩" },
+    { country: "Congo-Brazzaville", code: "+242", flag: "🇨🇬" },
+    { country: "Congo-Kinshasa", code: "+243", flag: "🇨🇩" },
+    { country: "Guinée équatoriale", code: "+240", flag: "🇬🇶" },
+    { country: "Gabon", code: "+241", flag: "🇬🇦" },
+    { country: "Afrique du Sud", code: "+27", flag: "🇿🇦" },
+    { country: "Algérie", code: "+213", flag: "🇩🇿" },
+    { country: "Angola", code: "+244", flag: "🇦🇴" },
+    { country: "Botswana", code: "+267", flag: "🇧🇼" },
+    { country: "Égypte", code: "+20", flag: "🇪🇬" },
+    { country: "Éthiopie", code: "+251", flag: "🇪🇹" },
+    { country: "Kenya", code: "+254", flag: "🇰🇪" },
+    { country: "Maroc", code: "+212", flag: "🇲🇦" },
+    { country: "Mozambique", code: "+258", flag: "🇲🇿" },
+    { country: "Ouganda", code: "+256", flag: "🇺🇬" },
+    { country: "Rwanda", code: "+250", flag: "🇷🇼" },
+    { country: "Soudan", code: "+249", flag: "🇸🇩" },
+    { country: "Tanzanie", code: "+255", flag: "🇹🇿" },
+    { country: "Zambie", code: "+260", flag: "🇿🇲" },
+    { country: "Zimbabwe", code: "+263", flag: "🇿🇼" },
+    { country: "France", code: "+33", flag: "🇫🇷" },
+    { country: "Belgique", code: "+32", flag: "🇧🇪" },
+    { country: "Suisse", code: "+41", flag: "🇨🇭" },
+    { country: "Canada", code: "+1", flag: "🇨🇦" },
+    { country: "États-Unis", code: "+1", flag: "🇺🇸" },
+    { country: "Chine", code: "+86", flag: "🇨🇳" },
+    { country: "Inde", code: "+91", flag: "🇮🇳" },
+    { country: "Brésil", code: "+55", flag: "🇧🇷" }
+].sort((a, b) => a.country.localeCompare(b.country));
+
 const formSchema = z.object({
+    countryCode: z.string(),
     phoneNumber: z.string()
-        .min(8, "Le numéro est trop court")
-        .max(15, "Le numéro est trop long")
-        .regex(/^\+?[0-9\s-]+$/, "Format de numéro invalide"),
+        .min(7, "Le numéro est trop court")
+        .max(12, "Le numéro est trop long")
+        .regex(/^[0-9\s-]+$/, "Format de numéro invalide"),
 });
 
 export default function NumberValidationPage() {
@@ -42,9 +99,21 @@ export default function NumberValidationPage() {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            phoneNumber: businessProfile?.businessPhoneNumber || "",
+            countryCode: businessProfile?.country || "Bénin",
+            phoneNumber: (businessProfile?.businessPhoneNumber || "").replace(/^\+\d+\s?/, ""),
         },
     });
+
+    useEffect(() => {
+        if (businessProfile) {
+            form.setValue('countryCode', businessProfile.country || "Bénin");
+            if (businessProfile.businessPhoneNumber) {
+                const countryCode = countryPhoneData.find(c => c.country === businessProfile.country)?.code || "+228";
+                const cleanedNumber = businessProfile.businessPhoneNumber.replace(countryCode, "").trim();
+                form.setValue('phoneNumber', cleanedNumber);
+            }
+        }
+    }, [businessProfile, form]);
 
     useEffect(() => {
         if (businessProfile?.businessPhoneNumberStatus === 'rejected') {
@@ -55,6 +124,9 @@ export default function NumberValidationPage() {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         if (!currentUser || !businessId) return;
 
+        const code = countryPhoneData.find(c => c.country === values.countryCode)?.code || "+228";
+        const fullNumber = `${code}${values.phoneNumber.replace(/\s/g, "")}`;
+
         setIsLoading(true);
         try {
             // 1. Submit the validation request for admin approval
@@ -62,14 +134,14 @@ export default function NumberValidationPage() {
                 currentUser.uid,
                 businessId,
                 businessProfile?.name || "Entreprise",
-                values.phoneNumber
+                fullNumber
             );
 
             // 2. IMPORTANT: Update the USER document instead of the business profile
             // This avoids "Permission Denied" if RDB rules are strict on business profiles
             // and fulfills the request to have it in the user's document.
             await updateUserProfile(currentUser.uid, {
-                phoneNumber: values.phoneNumber,
+                phoneNumber: fullNumber,
                 // We'll use this temporarily on the user object to track their specific pending status
                 // even if the business profile isn't yet updated by an admin
             } as any, currentUser.uid, businessId);
@@ -78,7 +150,7 @@ export default function NumberValidationPage() {
             // but we wrap it in a try-catch to not block the user if it fails
             try {
                 await updateBusinessProfile(businessId, {
-                    businessPhoneNumber: values.phoneNumber,
+                    businessPhoneNumber: fullNumber,
                     businessPhoneNumberStatus: 'pending'
                 }, currentUser.uid);
             } catch (e) {
@@ -92,8 +164,8 @@ export default function NumberValidationPage() {
                 description: "Votre numéro a été enregistré. Vous pouvez maintenant accéder à votre tableau de bord.",
             });
 
-            // Redirect to Step 5 (Welcome) instead of Overview
-            router.push('/welcome');
+            // Redirect to Dashboard (AuthProvider will handle the next blocking steps)
+            router.push('/overview');
         } catch (error: any) {
             console.error("Number validation submission failed:", error);
             toast({
@@ -109,7 +181,7 @@ export default function NumberValidationPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
             <div className="w-full max-w-md space-y-8 animate-in fade-in zoom-in duration-500">
-                <RegistrationProgress currentStep={4} />
+                <RegistrationProgress currentStep={3} />
                 <div className="text-center">
                     <div className="flex justify-center mb-4">
                         <AppLogo className="h-16 w-16" />
@@ -133,26 +205,56 @@ export default function NumberValidationPage() {
                     <CardContent>
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                                <FormField
-                                    control={form.control}
-                                    name="phoneNumber"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Numéro de téléphone WhatsApp</FormLabel>
-                                            <FormControl>
-                                                <div className="relative">
-                                                    <Input
-                                                        placeholder="+225 00 00 00 00 00"
-                                                        className="pl-10"
-                                                        {...field}
-                                                    />
-                                                    <MessageSquare className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                                                </div>
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                                <div className="grid grid-cols-3 gap-2">
+                                    <FormField
+                                        control={form.control}
+                                        name="countryCode"
+                                        render={({ field }) => (
+                                            <FormItem className="col-span-1">
+                                                <FormLabel>Indicatif</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger className="px-2">
+                                                            <SelectValue placeholder="Pays" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {countryPhoneData.map((c) => (
+                                                            <SelectItem key={`${c.country}-${c.code}`} value={c.country}>
+                                                                <span className="flex items-center gap-2">
+                                                                    <span className="text-lg">{c.flag}</span>
+                                                                    <span>{c.code}</span>
+                                                                </span>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
+                                        name="phoneNumber"
+                                        render={({ field }) => (
+                                            <FormItem className="col-span-2">
+                                                <FormLabel>Numéro WhatsApp</FormLabel>
+                                                <FormControl>
+                                                    <div className="relative">
+                                                        <Input
+                                                            placeholder="00 00 00 00"
+                                                            className="pl-10"
+                                                            {...field}
+                                                        />
+                                                        <MessageSquare className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                                                    </div>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
                                 <Button type="submit" className="w-full" disabled={isLoading}>
                                     {isLoading ? (
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />

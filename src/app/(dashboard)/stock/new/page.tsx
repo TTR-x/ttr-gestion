@@ -22,6 +22,7 @@ import { Separator } from "@/components/ui/separator";
 import { ResolvedImage } from '@/components/ui/resolved-image';
 import { Label } from "@/components/ui/label";
 import { uploadToCloudinary } from '@/lib/cloudinary';
+import { localImageService } from '@/lib/local-image-service';
 
 import type { StockItem } from "@/lib/types";
 import { v4 as uuidv4 } from 'uuid';
@@ -114,14 +115,19 @@ export default function NewStockItemPage() {
     }
 
     try {
-      const imageUrl = await uploadToCloudinary(file);
-      setImagePreview(imageUrl);
+      // Save locally first. This returns a local:// UUID placeholder.
+      // The localImageService will automatically queue a background upload to Cloudinary.
+      const localUrl = await localImageService.saveImageLocally(file);
+      setImagePreview(localUrl);
 
-      if (!isOffline) {
-        toast({ title: "Image téléversée avec succès !" });
-      }
+      toast({
+        title: "Image enregistrée",
+        description: isOffline
+          ? "Elle sera synchronisée dès que vous retrouverez une connexion."
+          : "Téléversement vers le serveur en arrière-plan..."
+      });
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Échec du téléversement", description: error.message });
+      toast({ variant: "destructive", title: "Échec de l'enregistrement", description: error.message });
       setImagePreview(null);
     } finally {
       setIsUploading(false);
@@ -138,6 +144,9 @@ export default function NewStockItemPage() {
     showLoader();
 
     try {
+      // Resolve to public URL if already uploaded
+      const finalImageUrl = await localImageService.getPublicUrl(imagePreview || '');
+
       const newItem: StockItem = {
         id: uuidv4(),
         workspaceId: activeWorkspaceId,
@@ -148,7 +157,7 @@ export default function NewStockItemPage() {
         isForSale: values.isForSale,
         lowStockThreshold: values.lowStockThreshold,
         purchasePrice: values.purchasePrice,
-        imageUrl: imagePreview || '',
+        imageUrl: finalImageUrl,
         price: values.isForSale ? values.price : undefined,
         createdAt: Date.now(),
         updatedAt: Date.now(),

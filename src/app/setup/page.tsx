@@ -154,8 +154,8 @@ export default function SetupPage() {
       await createOrUpdateBusinessProfile(profileData, currentUser.uid);
       await refreshAuthContext();
 
-      toast({ title: "Configuration terminée !", description: "Veuillez maintenant valider votre adresse e-mail." });
-      router.push('/verify-email');
+      toast({ title: "Configuration terminée !", description: "Veuillez maintenant enregistrer votre numéro WhatsApp." });
+      router.push('/admin/number-validation');
 
     } catch (error: any) {
       console.error("Échec de la configuration:", error);
